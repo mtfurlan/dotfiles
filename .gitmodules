@@ -1,0 +1,9 @@
+[submodule "link/.vim/bundle/tmuxline.vim"]
+	path = link/.vim/bundle/tmuxline.vim
+	url = git@github.com:edkolev/tmuxline.vim.git
+[submodule "link/.vim/bundle/vim-airline"]
+	path = link/.vim/bundle/vim-airline
+	url = git@github.com:bling/vim-airline.git
+[submodule "link/.vim/bundle/vim-tmux-navigator"]
+	path = link/.vim/bundle/vim-tmux-navigator
+	url = git@github.com:christoomey/vim-tmux-navigator.git

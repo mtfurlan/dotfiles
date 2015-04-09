@@ -1,0 +1,7 @@
+[user]
+	name = Mark Furland
+	email = markfurland@gmail.com
+[core]
+	editor = vim
+[color]
+	ui = auto
