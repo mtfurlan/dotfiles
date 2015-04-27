@@ -12,7 +12,8 @@ alias df='df -h'
 
 alias tmux='tmux -2'
 
-alias spurge="curl -F 'sprunge=<-' http://sprunge.us"
+alias sprunge="curl -F 'sprunge=<-' http://sprunge.us"
+alias pastebin="curl -F 'sprunge=<-' http://sprunge.us"
 
 alias fuck='sudo $(history -p \!\!)'
 
