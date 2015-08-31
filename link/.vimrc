@@ -1,5 +1,7 @@
 set nocompatible
 
+filetype plugin indent on
+
 execute pathogen#infect()
 "Bundle 'edkolev/tmuxline.vim'
 "Bundle 'bling/vim-airline'
