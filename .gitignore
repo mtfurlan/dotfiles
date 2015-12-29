@@ -1,4 +1,6 @@
 link/.vim/backups
+link/.vim/tmp
 backups
 caches
 *.swp
+*~

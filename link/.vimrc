@@ -42,6 +42,10 @@ if has('persistent_undo')
 	set undofile
 endif
 
+" ===Remvoe silly temp files ===
+set backupdir=~/.vim/tmp,.
+set directory=~/.vim/tmp,.
+
 " The vimairline plugin stuff
 set laststatus=2
 let g:airline_powerline_fonts = 1
