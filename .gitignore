@@ -1,5 +1,6 @@
 link/.vim/backups
 link/.vim/tmp
+link/.vim/.netrwhist
 backups
 caches
 *.swp

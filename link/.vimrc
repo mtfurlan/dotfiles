@@ -58,3 +58,10 @@ let g:airline_theme='wombat'
 
 let g:airline#extensions#tabline#enabled = 1
 set hidden
+
+
+
+"vim-latex stuff
+set grepprg=grep\ -nH\ $*
+let g:tex_flavor='latex'
+let g:Tex_DefaultTargetFormat = 'pdf'

@@ -6,3 +6,5 @@
 	pager = less -R
 [color]
 	ui = auto
+[push]
+	default = simple
