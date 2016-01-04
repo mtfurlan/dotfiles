@@ -22,7 +22,7 @@ set scrolloff=5
 set mouse=
 
 " autoremove whitespace
-autocmd FileType c,cpp,java,php,pl,html autocmd BufWritePre <buffer> :%s/\s\+$//e
+autocmd FileType tex,c,cpp,java,php,pl,html autocmd BufWritePre <buffer> :%s/\s\+$//e
 
 " https://github.com/skwp/dotfiles/blob/master/vimrc
 " ================ General Config ====================
