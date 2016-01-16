@@ -1,0 +1,114 @@
+#!/bin/bash
+#Should really be set -e as well, but I don't want to rewrite now
+#look at http://redsymbol.net/articles/unofficial-bash-strict-mode/
+set -u
+
+
+#This script helps with installs for stow, as you compile for
+# some prefix, but install to $PREFIX/stow/package
+#Makefiles don't always like doing
+#	make install prefix=whatever
+#so we must use
+#	make install DESDIR=whatever
+# which includes the full path in the destdir
+# For example, compile gcc-5.3.0
+#	../configure --prefix=/home/mark/local/ --disable-multilib
+#	make
+#	make install DESTDIR=/home/mark/local/stow/gcc-5.3.0
+# will result in /home/mark/local/stow/gcc-5.3.0/home/mark/local/
+# being populated with bin/, include/, etc. Things that should be
+# at /home/mark/local/stow/gcc-5.3.0/
+# So this script does everything between make install, and stow.
+
+
+# Despite pretending to have failure modes, it's probably a bit iffy.
+
+#Set to true to not run any commands, is for debugging
+DRY_RUN=false
+
+currDir=`pwd`
+#restore the dir before execution
+function restoreDir(){
+	if [ `pwd` != $currDir ]; then
+		printf "changing dir to $currDir\n"
+		cd $currDir
+	fi
+}
+#When we exit, go to previous dir
+trap restoreDir EXIT
+
+#Colour printing for errors
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+#Function to call if there is an error
+function errPrint(){
+	#if argument 1 is missing, don't print error
+	if [ ! -z "$1" ]; then
+		printf "${RED}${1}${NC}\n" 1>&2
+	fi
+}
+
+#destDir is the target directory for where the install will live
+destDir="${HOME}/local/stow/$1"
+
+#if destDir already exists, problem
+if [ -d $destDir ]; then
+	errPrint "destDir $destDir already exists. Try deleting it"
+	exit 1
+fi
+
+
+makeCom="make install DESTDIR=$destDir"
+echo "running '$makeCom'"
+if  ! $DRY_RUN; then eval $makeCom; fi
+
+
+
+
+if [ ! $? -eq 0 ]; then
+	errPrint "Make failed, fix it"
+	exit 1
+fi
+
+#We don't want to change directory if dry run, directory won't exist.
+echo "changing dir to $destDir"
+if ! $DRY_RUN; then cd $destDir; fi
+
+
+
+
+### Move results
+moveCom="mv .${HOME}/local/* ."
+echo "running '$moveCom'"
+if ! $DRY_RUN; then eval $moveCom; fi
+
+
+###   Delete empty dir
+rmdirCom="rmdir .${HOME}/local"
+echo "running '$rmdirCom'"
+if ! $DRY_RUN; then eval $rmdirCom; fi
+if [ ! $? -eq 0 ]; then
+	errPrint "rmdir failed, copy didn't work?"
+	exit 1
+fi
+rmrfCom="rm -rf home"
+echo "running '$rmrfCom'"
+if ! $DRY_RUN; then eval $rmrfCom; fi
+if [ ! $? -eq 0 ]; then
+	errPrint "rm -rf failed, what even happened"
+	exit 1
+fi
+### changedir one up for stow
+echo "changing dir to ../"
+cd ../
+
+###   Run Stow
+stowCom="stow -vv $1"
+echo "running '$stowCom'"
+if ! $DRY_RUN; then eval $stowCom; fi
+if [ ! $? -eq 0 ]; then
+	errPrint "stow fucked up, cry?"
+	exit 1
+fi
+
