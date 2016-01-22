@@ -49,8 +49,14 @@ else
 fi
 
 if [ "$color_prompt" = yes ]; then
+	#A way to show if user is in groups wheel, sudo, or adm
+	if [[ `groups` =~ wheel|sudo|adm ]]; then
+		sudo="\[\e[32m\](s)\[\e[m\]"
+	else
+		sudo="\[\e[31m\](ns)\[\e[m\]"
+	fi
 	#the first bit just shows the return code if nonzero, in red
-    PS1="\[\033[01;31m\]\${?##0}\[\033[00m\]\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ "
+	PS1="\[\033[01;31m\]\${?##0}\[\033[00m\]\[\033[01;32m\]\u@\h\[\033[00m\]$sudo:\[\033[01;34m\]\w\[\033[00m\]\$ "
 else
     PS1='\u@\h:\w\$ '
 fi
