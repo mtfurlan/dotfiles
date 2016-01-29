@@ -21,9 +21,6 @@ set scrolloff=5
 
 set mouse=
 
-" autoremove whitespace
-autocmd FileType tex,c,cpp,java,php,pl,html autocmd BufWritePre <buffer> :%s/\s\+$//e
-
 " https://github.com/skwp/dotfiles/blob/master/vimrc
 " ================ General Config ====================
 set backspace=indent,eol,start "Allow backspace in insert mode
@@ -60,8 +57,5 @@ let g:airline#extensions#tabline#enabled = 1
 set hidden
 
 
-
-"vim-latex stuff
-set grepprg=grep\ -nH\ $*
-let g:tex_flavor='latex'
-let g:Tex_DefaultTargetFormat = 'pdf'
+" autoremove whitespace
+autocmd FileType tex,c,cpp,java,php,pl,html autocmd BufWritePre <buffer> :%s/\s\+$//e
