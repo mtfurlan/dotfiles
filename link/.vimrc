@@ -57,5 +57,8 @@ let g:airline#extensions#tabline#enabled = 1
 set hidden
 
 
-" autoremove whitespace
+" autoremove trailing whitespace
 autocmd FileType tex,c,cpp,java,php,pl,html autocmd BufWritePre <buffer> :%s/\s\+$//e
+
+
+command SpellOn setlocal spell spelllang=en_us
