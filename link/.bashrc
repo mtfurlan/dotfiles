@@ -60,7 +60,7 @@ if [ "$color_prompt" = yes ]; then
 	hostnamecolor=$(hostname | od | tr ' ' '\n' | awk '{total = total + $1}END{print 30 + (total % 6)}')
 
 	#the first bit just shows the return code if nonzero, in red
-	PS1="\[\033[01;31m\]\${?##0}\[\033[00m\]\[\033[01;32m\]\u@\[\e[${hostnamecolor}m\]\]\h\[\033[00m\]$sudo:\[\033[01;34m\]\w\[\033[00m\]\$ "
+	PS1="\[\033[01;31m\]\${?##0}\[\033[00m\]\[\033[01;32m\]\u@\[\e[${hostnamecolor}m\]\h\[\033[00m\]$sudo:\[\033[01;34m\]\w\[\033[00m\]\$ "
 else
     PS1='\u@\h:\w\$ '
 fi
