@@ -7,3 +7,6 @@
 [submodule "link/.vim/bundle/vim-tmux-navigator"]
 	path = link/.vim/bundle/vim-tmux-navigator
 	url = https://github.com/christoomey/vim-tmux-navigator.git
+[submodule "link/.vim/bundle/vim-sleuth"]
+	path = link/.vim/bundle/vim-sleuth
+	url = git://github.com/tpope/vim-sleuth.git

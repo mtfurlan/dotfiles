@@ -11,8 +11,6 @@ execute pathogen#infect()
 
 set t_Co=256
 
-set tabstop=4 softtabstop=4 shiftwidth=4 noexpandtab
-set autoindent smartindent cindent
 syntax on
 set background=dark
 set pastetoggle=<F3>
@@ -58,9 +56,13 @@ set hidden
 
 
 " autoremove trailing whitespace
-autocmd FileType css,tex,c,cpp,java,php,pl,html autocmd BufWritePre <buffer> :%s/\s\+$//e
+autocmd FileType css,tex,c,cpp,java,php,pl,html,js autocmd BufWritePre <buffer> :%s/\s\+$//e
 
 
 command SpellOn setlocal spell spelllang=en_us
 
 set nofoldenable    " disable folding
+
+
+" Thing from robin for clipboard stuff
+set clipboard=unnamedplus
