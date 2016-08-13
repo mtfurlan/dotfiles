@@ -1,23 +1,30 @@
 set nocompatible
+filetype off
 
+set rtp+=~/.vim/bundle/Vundle.vim
+call vundle#begin()
+
+Plugin 'VundleVim/Vundle.vim'
+Plugin 'edkolev/tmuxline.vim'
+Plugin 'vim-airline/vim-airline'
+Plugin 'vim-airline/vim-airline-themes'
+Plugin 'vim-latex/vim-latex'
+Plugin 'tpope/vim-sleuth'
+Plugin 'tpope/vim-fugitive'
+Plugin 'Valloric/MatchTagAlways'
+Plugin 'christoomey/vim-tmux-navigator'
+
+call vundle#end()
 filetype plugin indent on
-
-execute pathogen#infect()
-"Bundle 'edkolev/tmuxline.vim'
-"Bundle 'bling/vim-airline'
-"Bundle 'christoomey/vim-tmux-navigator'
-
-
 
 set t_Co=256
 
 syntax on
-set background=dark
 set pastetoggle=<F3>
 
 set scrolloff=5
 
-set mouse=
+set hlsearch
 
 " https://github.com/skwp/dotfiles/blob/master/vimrc
 " ================ General Config ====================
