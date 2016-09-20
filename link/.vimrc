@@ -13,6 +13,7 @@ Plugin 'tpope/vim-sleuth'
 Plugin 'tpope/vim-fugitive'
 Plugin 'Valloric/MatchTagAlways'
 Plugin 'christoomey/vim-tmux-navigator'
+Plugin 'JamshedVesuna/vim-markdown-preview'
 
 call vundle#end()
 filetype plugin indent on
@@ -55,7 +56,6 @@ let g:airline_powerline_fonts = 1
 if !exists('g:airline_symbols')
 	let g:airline_symbols = {}
 endif
-let g:airline_symbols.space = "\ua0"
 let g:airline_theme='wombat'
 
 let g:airline#extensions#tabline#enabled = 1
@@ -67,9 +67,38 @@ autocmd FileType css,tex,c,cpp,java,php,pl,html,js autocmd BufWritePre <buffer> 
 
 
 command SpellOn setlocal spell spelllang=en_us
+command SpellOff nospell
 
 set nofoldenable    " disable folding
 
 
 " Thing from robin for clipboard stuff
 set clipboard=unnamedplus
+
+
+" vim-markdown-preview settings
+let vim_markdown_preview_github=1
+
+set listchars=eol:¬,tab:>·,trail:~,extends:>,precedes:<,space:␣
+" Use ':set list' to show whitespace, ':set nolist' to disable
+
+" default tab settings, should get overridden...
+command Tab set tabstop=4 noexpandtab shiftwidth=4
+command NoTab set tabstop=4 expandtab shiftwidth=4 softtabstop=4
+set tabstop=4
+
+
+" Tmuxline
+let g:tmuxline_preset = {
+	\'a'    : '#S',
+	\'b'    : '#W',
+	\'c'    : '#H',
+	\'win'  : '#I #W',
+	\'cwin' : '#I #W',
+	\'x'    : '#(upower -i /org/freedesktop/UPower/devices/battery_BAT0 | grep -E "time to empty|percentage" |xargs echo)',
+	\'y'    : ['%Y-%m-%d', '%H:%M'],
+	\'z'    : '#h',
+	\'options': {
+		\'status-justify': 'left'
+	\}
+\}
