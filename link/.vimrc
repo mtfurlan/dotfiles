@@ -89,10 +89,10 @@ set tabstop=4
 
 
 " Tmuxline
+"	\'c'    : '#H',
 let g:tmuxline_preset = {
 	\'a'    : '#S',
 	\'b'    : '#W',
-	\'c'    : '#H',
 	\'win'  : '#I #W',
 	\'cwin' : '#I #W',
 	\'x'    : '#(upower -i /org/freedesktop/UPower/devices/battery_BAT0 | grep -E "time to empty|percentage" |xargs echo)',
