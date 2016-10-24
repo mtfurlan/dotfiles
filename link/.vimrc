@@ -14,6 +14,7 @@ Plugin 'tpope/vim-fugitive'
 Plugin 'Valloric/MatchTagAlways'
 Plugin 'christoomey/vim-tmux-navigator'
 Plugin 'JamshedVesuna/vim-markdown-preview'
+Plugin 'scrooloose/syntastic'
 
 call vundle#end()
 filetype plugin indent on
@@ -59,6 +60,7 @@ endif
 let g:airline_theme='wombat'
 
 let g:airline#extensions#tabline#enabled = 1
+let g:airline#extensions#tabline#buffer_nr_show = 1
 set hidden
 
 
@@ -102,3 +104,16 @@ let g:tmuxline_preset = {
 		\'status-justify': 'left'
 	\}
 \}
+
+
+" Syntastic
+
+set statusline+=%#warningmsg#
+set statusline+=%{SyntasticStatuslineFlag()}
+set statusline+=%*
+
+let g:syntastic_always_populate_loc_list = 1
+let g:syntastic_auto_loc_list = 1
+let g:syntastic_check_on_open = 1
+let g:syntastic_check_on_wq = 0
+let g:syntastic_javascript_checkers = ['jshint']
