@@ -9,5 +9,6 @@
 	ui = auto
 [push]
 	default = simple
+	followTags = true
 [merge]
 	tool = vimdiff
