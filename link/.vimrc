@@ -15,6 +15,7 @@ Plugin 'Valloric/MatchTagAlways'
 Plugin 'christoomey/vim-tmux-navigator'
 Plugin 'JamshedVesuna/vim-markdown-preview'
 Plugin 'scrooloose/syntastic'
+Plugin 'scrooloose/nerdtree'
 
 call vundle#end()
 filetype plugin indent on
