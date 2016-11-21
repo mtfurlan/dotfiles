@@ -106,6 +106,8 @@ let g:tmuxline_preset = {
 	\}
 \}
 
+" Nerdtree binding
+map <C-n> :NERDTreeToggle<CR>
 
 " Syntastic
 
