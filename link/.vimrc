@@ -16,6 +16,9 @@ Plugin 'christoomey/vim-tmux-navigator'
 Plugin 'JamshedVesuna/vim-markdown-preview'
 Plugin 'scrooloose/syntastic'
 Plugin 'scrooloose/nerdtree'
+Plugin 'leafgarland/typescript-vim'
+Plugin 'editorconfig/editorconfig-vim'
+Plugin 'Xuyuanp/nerdtree-git-plugin'
 
 call vundle#end()
 filetype plugin indent on
@@ -112,7 +115,6 @@ let NERDTreeQuitOnOpen=1
 
 
 " Syntastic
-
 set statusline+=%#warningmsg#
 set statusline+=%{SyntasticStatuslineFlag()}
 set statusline+=%*
@@ -123,3 +125,4 @@ let g:syntastic_check_on_open = 1
 let g:syntastic_check_on_wq = 0
 let g:syntastic_javascript_checkers=['standard']
 let g:syntastic_javascript_standard_exec = 'semistandard'
+
