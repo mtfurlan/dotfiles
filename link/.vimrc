@@ -45,9 +45,9 @@ set autoread "Reload files changed outside vim
 " Keep undo history across sessions, by storing in file.
 " Only works all the time.
 if has('persistent_undo')
-	silent !mkdir ~/.vim/backups > /dev/null 2>&1
-	set undodir=~/.vim/backups
-	set undofile
+  silent !mkdir ~/.vim/backups > /dev/null 2>&1
+  set undodir=~/.vim/backups
+  set undofile
 endif
 
 " ===Remvoe silly temp files ===
@@ -59,7 +59,7 @@ set laststatus=2
 let g:airline_powerline_fonts = 1
 
 if !exists('g:airline_symbols')
-	let g:airline_symbols = {}
+  let g:airline_symbols = {}
 endif
 let g:airline_theme='wombat'
 
@@ -68,8 +68,20 @@ let g:airline#extensions#tabline#buffer_nr_show = 1
 set hidden
 
 
-" autoremove trailing whitespace
-autocmd FileType css,tex,c,cpp,java,php,pl,html,js autocmd BufWritePre <buffer> :%s/\s\+$//e
+" show trailing whitespace
+:highlight ExtraWhitespace ctermbg=red guibg=red
+:match ExtraWhitespace /\s\+\%#\@<!$/
+
+" auto remove whitespace
+" http://stackoverflow.com/a/1618401/2423187
+fun! <SID>StripTrailingWhitespaces()
+    let l = line(".")
+    let c = col(".")
+    %s/\s\+$//e
+    call cursor(l, c)
+endfun
+
+autocmd FileType javascript,html,css,perl,c,cpp,java,php,ruby,python autocmd BufWritePre <buffer> :call <SID>StripTrailingWhitespaces()
 
 
 command SpellOn setlocal spell spelllang=en_us
@@ -97,16 +109,16 @@ set tabstop=4
 " Tmuxline
 "	\'c'    : '#H',
 let g:tmuxline_preset = {
-	\'a'    : '#S',
-	\'b'    : '#W',
-	\'win'  : '#I #W',
-	\'cwin' : '#I #W',
-	\'x'    : '#(upower -i /org/freedesktop/UPower/devices/battery_BAT0 | grep -E "time to empty|percentage" |xargs echo)',
-	\'y'    : ['%Y-%m-%d', '%H:%M'],
-	\'z'    : '#h',
-	\'options': {
-		\'status-justify': 'left'
-	\}
+    \'a'    : '#S',
+    \'b'    : '#W',
+    \'win'  : '#I #W',
+    \'cwin' : '#I #W',
+    \'x'    : '#(upower -i /org/freedesktop/UPower/devices/battery_BAT0 | grep -E "time to empty|percentage" |xargs echo)',
+    \'y'    : ['%Y-%m-%d', '%H:%M'],
+    \'z'    : '#h',
+    \'options': {
+        \'status-justify': 'left'
+    \}
 \}
 
 " Nerdtree binding
