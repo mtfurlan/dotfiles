@@ -30,7 +30,11 @@ set pastetoggle=<F3>
 
 set scrolloff=5
 
+" Set search hilight and colour
 set hlsearch
+hi Search cterm=NONE ctermfg=grey ctermbg=blue
+
+set background=dark
 
 " https://github.com/skwp/dotfiles/blob/master/vimrc
 " ================ General Config ====================
