@@ -101,7 +101,7 @@ set clipboard=unnamedplus
 " vim-markdown-preview settings
 let vim_markdown_preview_github=1
 
-set listchars=eol:¬,tab:>·,trail:~,extends:>,precedes:<,space:␣
+" set listchars=eol:¬,tab:>·,trail:~,extends:>,precedes:<,space:␣
 " Use ':set list' to show whitespace, ':set nolist' to disable
 
 " default tab settings, should get overridden...
