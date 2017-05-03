@@ -18,6 +18,7 @@ alias gammend='GIT_COMMITTER_DATE=\"`git log -1 --format=%cd`\" git commit --ame
 alias sprunge="curl -F 'sprunge=<-' http://sprunge.us"
 alias pastebin="curl -F 'sprunge=<-' http://sprunge.us"
 
+alias irc="mosh agmlego -- screen -xdUS irssi"
 
 alias duc="du --max-depth=1 -ha | sort -rh | sed 's/\.\///' | sed /^0/d"
 
