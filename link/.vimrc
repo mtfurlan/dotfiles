@@ -19,6 +19,7 @@ Plugin 'scrooloose/nerdtree'
 Plugin 'leafgarland/typescript-vim'
 Plugin 'editorconfig/editorconfig-vim'
 Plugin 'Xuyuanp/nerdtree-git-plugin'
+Plugin 'vim-scripts/Conque-GDB'
 
 call vundle#end()
 filetype plugin indent on
