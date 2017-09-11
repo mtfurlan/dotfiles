@@ -1,0 +1,3 @@
+.ssh recurse
+.ssh/config chmod 0600
+.vim recurse
