@@ -13,13 +13,15 @@ Plugin 'tpope/vim-sleuth'
 Plugin 'tpope/vim-fugitive'
 Plugin 'Valloric/MatchTagAlways'
 Plugin 'christoomey/vim-tmux-navigator'
-Plugin 'JamshedVesuna/vim-markdown-preview'
+"Plugin 'JamshedVesuna/vim-markdown-preview'
+Plugin 'suan/vim-instant-markdown'
 Plugin 'scrooloose/syntastic'
 Plugin 'scrooloose/nerdtree'
 Plugin 'leafgarland/typescript-vim'
 Plugin 'editorconfig/editorconfig-vim'
 Plugin 'Xuyuanp/nerdtree-git-plugin'
 Plugin 'vim-scripts/Conque-GDB'
+Plugin 'vivien/vim-linux-coding-style'
 
 call vundle#end()
 filetype plugin indent on
@@ -145,3 +147,5 @@ if executable('node_modules/.bin/eslint')
   let b:syntastic_javascript_eslint_exec = 'node_modules/.bin/eslint'
 endif
 
+
+let g:linuxsty_patterns = [ ]
