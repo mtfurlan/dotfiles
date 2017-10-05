@@ -146,6 +146,7 @@ let g:syntastic_javascript_checkers=['eslint']
 if executable('node_modules/.bin/eslint')
   let b:syntastic_javascript_eslint_exec = 'node_modules/.bin/eslint'
 endif
+let b:syntastic_mode="passive"
 
 
 let g:linuxsty_patterns = [ ]
