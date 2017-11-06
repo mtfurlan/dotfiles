@@ -103,6 +103,8 @@ set clipboard=unnamedplus
 
 " vim-markdown-preview settings
 let vim_markdown_preview_github=1
+let g:instant_markdown_autostart = 0
+map <C-P> :InstantMarkdownPreview<CR>
 
 " set listchars=eol:¬,tab:>·,trail:~,extends:>,precedes:<,space:␣
 " Use ':set list' to show whitespace, ':set nolist' to disable
@@ -146,7 +148,6 @@ let g:syntastic_javascript_checkers=['eslint']
 if executable('node_modules/.bin/eslint')
   let b:syntastic_javascript_eslint_exec = 'node_modules/.bin/eslint'
 endif
-let b:syntastic_mode="passive"
-
+let g:syntastic_mode_map = { 'mode': 'passive' }
 
 let g:linuxsty_patterns = [ ]
