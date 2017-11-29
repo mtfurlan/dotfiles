@@ -151,3 +151,15 @@ endif
 let g:syntastic_mode_map = { 'mode': 'passive' }
 
 let g:linuxsty_patterns = [ ]
+
+
+augroup collumnLimit
+  autocmd!
+  autocmd BufEnter,WinEnter,FileType *
+        \ highlight CollumnLimit ctermbg=DarkGrey guibg=DarkGrey
+  let collumnLimit = 79 " feel free to customize
+  let pattern =
+        \ '\%<' . (collumnLimit+1) . 'v.\%>' . collumnLimit . 'v'
+  autocmd BufEnter,WinEnter,FileType *
+        \ let w:m1=matchadd('CollumnLimit', pattern, -1)
+augroup END
