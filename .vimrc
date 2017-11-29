@@ -26,18 +26,6 @@ Plugin 'vivien/vim-linux-coding-style'
 call vundle#end()
 filetype plugin indent on
 
-set t_Co=256
-
-syntax on
-set pastetoggle=<F3>
-
-set scrolloff=5
-
-" Set search hilight and colour
-set hlsearch
-hi Search cterm=NONE ctermfg=grey ctermbg=blue
-
-set background=dark
 
 " https://github.com/skwp/dotfiles/blob/master/vimrc
 " ================ General Config ====================
@@ -61,7 +49,8 @@ endif
 set backupdir=~/.vim/tmp,.
 set directory=~/.vim/tmp,.
 
-" The vimairline plugin stuff
+" ============== Plugin Configs ===============
+" ===The vimairline plugin stuff===
 set laststatus=2
 let g:airline_powerline_fonts = 1
 
@@ -74,48 +63,12 @@ let g:airline#extensions#tabline#enabled = 1
 let g:airline#extensions#tabline#buffer_nr_show = 1
 set hidden
 
-
-" show trailing whitespace
-:highlight ExtraWhitespace ctermbg=red guibg=red
-:match ExtraWhitespace /\s\+\%#\@<!$/
-
-" auto remove whitespace
-" http://stackoverflow.com/a/1618401/2423187
-fun! <SID>StripTrailingWhitespaces()
-    let l = line(".")
-    let c = col(".")
-    %s/\s\+$//e
-    call cursor(l, c)
-endfun
-
-autocmd FileType javascript,html,css,perl,c,cpp,java,php,ruby,python autocmd BufWritePre <buffer> :call <SID>StripTrailingWhitespaces()
-
-
-command SpellOn setlocal spell spelllang=en_us
-command SpellOff nospell
-
-set nofoldenable    " disable folding
-
-
-" Thing from robin for clipboard stuff
-set clipboard=unnamedplus
-
-
-" vim-markdown-preview settings
+" ===vim-markdown-preview settings===
 let vim_markdown_preview_github=1
 let g:instant_markdown_autostart = 0
 map <C-P> :InstantMarkdownPreview<CR>
 
-" set listchars=eol:¬,tab:>·,trail:~,extends:>,precedes:<,space:␣
-" Use ':set list' to show whitespace, ':set nolist' to disable
-
-" default tab settings, should get overridden...
-command Tab set tabstop=4 noexpandtab shiftwidth=4
-command NoTab set tabstop=4 expandtab shiftwidth=4 softtabstop=4
-set tabstop=4
-
-
-" Tmuxline
+" === Tmuxline ===
 "	\'c'    : '#H',
 let g:tmuxline_preset = {
     \'a'    : '#S',
@@ -130,12 +83,7 @@ let g:tmuxline_preset = {
     \}
 \}
 
-" Nerdtree binding
-map <C-n> :NERDTreeToggle<CR>
-let NERDTreeQuitOnOpen=1
-
-
-" Syntastic
+" === Syntastic ===
 set statusline+=%#warningmsg#
 set statusline+=%{SyntasticStatuslineFlag()}
 set statusline+=%*
@@ -152,7 +100,38 @@ let g:syntastic_mode_map = { 'mode': 'passive' }
 
 let g:linuxsty_patterns = [ ]
 
+" ===Nerdtree binding===
+map <C-n> :NERDTreeToggle<CR>
+let NERDTreeQuitOnOpen=1
 
+
+" ============== Display stuff ============
+set scrolloff=5
+set background=dark
+" not sure what this one is?
+set t_Co=256
+
+" Set search hilight and colour
+set hlsearch
+hi Search cterm=NONE ctermfg=grey ctermbg=blue
+
+" show trailing whitespace
+:highlight ExtraWhitespace ctermbg=red guibg=red
+:match ExtraWhitespace /\s\+\%#\@<!$/
+
+" auto remove whitespace
+" http://stackoverflow.com/a/1618401/2423187
+fun! <SID>StripTrailingWhitespaces()
+    let l = line(".")
+    let c = col(".")
+    %s/\s\+$//e
+    call cursor(l, c)
+endfun
+
+autocmd FileType javascript,html,css,perl,c,cpp,java,php,ruby,python autocmd BufWritePre <buffer> :call <SID>StripTrailingWhitespaces()
+
+" === Column Limit ===
+" https://stackoverflow.com/a/21406581
 augroup collumnLimit
   autocmd!
   autocmd BufEnter,WinEnter,FileType *
@@ -163,3 +142,16 @@ augroup collumnLimit
   autocmd BufEnter,WinEnter,FileType *
         \ let w:m1=matchadd('CollumnLimit', pattern, -1)
 augroup END
+
+" ================ Misc ===============
+" disable folding, was an issue in tex stuff
+set nofoldenable
+
+" Thing from robin for clipboard stuff
+" Don't think it works
+set clipboard=unnamedplus
+
+" default tab settings, should get overridden...
+command Tab set tabstop=4 noexpandtab shiftwidth=4
+command NoTab set tabstop=4 expandtab shiftwidth=4 softtabstop=4
+set tabstop=4
