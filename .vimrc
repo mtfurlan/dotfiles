@@ -106,6 +106,7 @@ let NERDTreeQuitOnOpen=1
 
 
 " ============== Display stuff ============
+syntax on
 set scrolloff=5
 set background=dark
 " not sure what this one is?
