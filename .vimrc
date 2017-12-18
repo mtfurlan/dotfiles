@@ -147,6 +147,7 @@ augroup END
 " ================ Misc ===============
 " disable folding, was an issue in tex stuff
 set nofoldenable
+set pastetoggle=<F3>
 
 " Thing from robin for clipboard stuff
 " Don't think it works
