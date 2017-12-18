@@ -9,7 +9,7 @@ fi
 
 export EDITOR=vim
 export VISUAL=vim
-export PATH=~/local/bin:/sbin:/usr/sbin:$PATH
+export PATH=~/local/bin:~/.local/bin:/sbin:/usr/sbin:$PATH
 
 # If not running interactively, don't do anything
 case $- in
