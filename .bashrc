@@ -92,5 +92,3 @@ if ! shopt -oq posix; then
   fi
   complete -cf sudo
 fi
-
-. $HOME/.shellrc.load
