@@ -11,6 +11,7 @@ Plugin 'vim-airline/vim-airline-themes'
 Plugin 'vim-latex/vim-latex'
 Plugin 'tpope/vim-sleuth'
 Plugin 'tpope/vim-fugitive'
+Plugin 'tpope/vim-markdown'
 Plugin 'Valloric/MatchTagAlways'
 Plugin 'christoomey/vim-tmux-navigator'
 "Plugin 'JamshedVesuna/vim-markdown-preview'
@@ -20,8 +21,8 @@ Plugin 'scrooloose/nerdtree'
 Plugin 'leafgarland/typescript-vim'
 Plugin 'editorconfig/editorconfig-vim'
 Plugin 'Xuyuanp/nerdtree-git-plugin'
-Plugin 'vim-scripts/Conque-GDB'
-Plugin 'vivien/vim-linux-coding-style'
+Plugin 'vimwiki/vimwiki'
+Plugin 'airblade/vim-gitgutter'
 
 call vundle#end()
 filetype plugin indent on
@@ -144,6 +145,11 @@ augroup collumnLimit
         \ let w:m1=matchadd('CollumnLimit', pattern, -1)
 augroup END
 
+
+" ================ Wiki ===============
+let g:vimwiki_list = [{'path': '~/sync/general/notes/vimwiki/', 'syntax': 'markdown', 'ext': '.md'}]
+let g:vimwiki_folding='expr'
+
 " ================ Misc ===============
 " disable folding, was an issue in tex stuff
 set nofoldenable
@@ -157,3 +163,19 @@ set clipboard=unnamedplus
 command Tab set tabstop=4 noexpandtab shiftwidth=4
 command NoTab set tabstop=4 expandtab shiftwidth=4 softtabstop=4
 set tabstop=4
+
+let g:gitgutter_enabled = 0
+
+nnoremap <leader>n :call ToggleGutter()<cr>
+
+function! ToggleGutter()
+  if &number
+    GitGutterDisable
+    set nonumber
+    set norelativenumber
+  else
+    set number
+    set relativenumber
+    GitGutterEnable
+  endif
+endfunction
