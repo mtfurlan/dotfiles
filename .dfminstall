@@ -1,3 +1,5 @@
 .ssh recurse
 .ssh/config chmod 0600
 .vim recurse
+setup.sh exec
+setup.sh skip
