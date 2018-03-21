@@ -23,10 +23,12 @@ Plugin 'editorconfig/editorconfig-vim'
 Plugin 'Xuyuanp/nerdtree-git-plugin'
 Plugin 'vimwiki/vimwiki'
 Plugin 'airblade/vim-gitgutter'
+Plugin 'mileszs/ack.vim'
 
 call vundle#end()
 filetype plugin indent on
 
+let mapleader = ","
 
 " https://github.com/skwp/dotfiles/blob/master/vimrc
 " ================ General Config ====================
@@ -149,6 +151,18 @@ augroup END
 " ================ Wiki ===============
 let g:vimwiki_list = [{'path': '~/sync/general/notes/vimwiki/', 'syntax': 'markdown', 'ext': '.md'}]
 let g:vimwiki_folding='expr'
+let g:vimwiki_url_maxsave = 0
+
+" =============== Search ==============
+if executable('ag')
+  let g:ackprg = 'ag --vimgrep'
+endif
+cnoreabbrev Ack Ack!
+nnoremap <Leader>a :Ack!<Space>
+cnoreabbrev ag Ack!
+cnoreabbrev aG Ack!
+cnoreabbrev Ag Ack!
+cnoreabbrev AG Ack!
 
 " ================ Misc ===============
 " disable folding, was an issue in tex stuff

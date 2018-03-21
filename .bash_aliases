@@ -15,8 +15,8 @@ alias tmux='tmux -2'
 alias glog="git log --graph --all --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative"
 alias gammend='GIT_COMMITTER_DATE=\"`git log -1 --format=%cd`\" git commit --amend'
 
-alias sprunge="curl -F 'sprunge=<-' http://sprunge.us"
-alias pastebin="curl -F 'sprunge=<-' http://sprunge.us"
+alias ix="curl -F 'f:1=<-' ix.io"
+#alias sprunge="curl -F 'sprunge=<-' http://sprunge.us"
 
 alias irc="mosh agmlego -- screen -xdUS irssi"
 
