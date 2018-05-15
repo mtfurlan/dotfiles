@@ -125,14 +125,15 @@ hi Search cterm=NONE ctermfg=grey ctermbg=blue
 
 " auto remove whitespace
 " http://stackoverflow.com/a/1618401/2423187
-fun! <SID>StripTrailingWhitespaces()
+fun! StripTrailingWhitespaces()
     let l = line(".")
     let c = col(".")
     %s/\s\+$//e
     call cursor(l, c)
 endfun
+command StripTrailing call StripTrailingWhitespaces()
 
-autocmd FileType javascript,html,css,perl,c,cpp,java,php,ruby,python autocmd BufWritePre <buffer> :call <SID>StripTrailingWhitespaces()
+autocmd FileType javascript,html,css,perl,c,cpp,java,php,ruby,python autocmd BufWritePre <buffer> :call StripTrailingWhitespaces()
 
 " === Column Limit ===
 " https://stackoverflow.com/a/21406581
@@ -172,6 +173,9 @@ set pastetoggle=<F3>
 " Thing from robin for clipboard stuff
 " Don't think it works
 set clipboard=unnamedplus
+
+" auto-complete thing
+set wildmenu
 
 " default tab settings, should get overridden...
 command Tab set tabstop=4 noexpandtab shiftwidth=4
