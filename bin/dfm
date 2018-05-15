@@ -15,8 +15,6 @@ use Pod::Usage;
 our $VERSION = 'v0.7.4';
 
 my %opts;
-my $shellrc_filename;
-my $shellrc_load_filename;
 my $repo_dir;
 my $home;
 
@@ -107,8 +105,6 @@ sub run_dfm {
     # set options to nothing so that running multiple times in tests
     # does not reuse options
     %opts = ();
-    $shellrc_filename = undef;
-    $shellrc_load_filename = undef;
     $repo_dir = undef;
     $home = undef;
 
@@ -175,17 +171,6 @@ sub run_dfm {
     }
 
     DEBUG("Repo dir: $repo_dir");
-
-    # extract the shell name from env
-    my $shell = basename( $ENV{SHELL} );
-    $shellrc_filename = '.' . $shell . 'rc';
-
-    DEBUG("Shell: $shell, Shell RC filename: $shellrc_filename");
-
-    # shellrc in MacOS is ~/.profile
-    if ( lc($OSNAME) eq 'darwin' and $shell eq 'bash' ) {
-        $shellrc_filename = '.profile';
-    }
 
     if ( exists $commands->{$command} ) {
         if ( $opts{'help'} ) {
@@ -337,20 +322,6 @@ sub install {
     DEBUG("Running in [$RealBin] and installing in [$home]");
 
     install_files( _abs_repo_path( $home, $repo_dir ), $home );
-
-    $shellrc_load_filename = '';
-
-    # link in the shell loader
-    if ( -e _abs_repo_path( $home, $repo_dir ) . "/.shellrc.load" ) {
-        $shellrc_load_filename = '.shellrc.load';
-    }
-    elsif ( -e _abs_repo_path( $home, $repo_dir ) . "/.bashrc.load" ) {
-        $shellrc_load_filename = '.bashrc.load';
-    }
-
-    if ($shellrc_load_filename) {
-        configure_shell_loader();
-    }
 }
 
 sub uninstall {
@@ -363,17 +334,6 @@ sub uninstall {
     # uninstall files
     uninstall_files( _abs_repo_path( $home, $repo_dir ), $home );
 
-    # link in the shell loader
-    if ( -e _abs_repo_path( $home, $repo_dir ) . "/.shellrc.load" ) {
-        $shellrc_load_filename = '.shellrc.load';
-    }
-    elsif ( -e _abs_repo_path( $home, $repo_dir ) . "/.bashrc.load" ) {
-        $shellrc_load_filename = '.bashrc.load';
-    }
-
-    if ($shellrc_load_filename) {
-        unconfigure_shell_loader();
-    }
 }
 
 # function to install files
@@ -494,26 +454,6 @@ sub install_files {
 
     # restore previous working directory
     chdir($cwd_before_install);
-}
-
-sub configure_shell_loader {
-    chdir($home);
-
-    my $shellrc_contents = _read_shellrc_contents();
-
-    # check if the loader is in
-    if ( $shellrc_contents !~ /$shellrc_load_filename/ ) {
-        INFO("Appending loader to $shellrc_filename");
-        $shellrc_contents .= "\n. \$HOME/$shellrc_load_filename\n";
-    }
-
-    # if the new loader filename (.shellrc.load) is used, but the old loader
-    # filename (.bashrc.load) is in the shell rc, remove it
-    if ( $shellrc_load_filename =~ m/shellrc/ && $shellrc_contents =~ /\.bashrc\.load/ ) {
-        $shellrc_contents =~ s{\n. \$HOME/\.bashrc\.load\n}{}gs;
-    }
-
-    _write_shellrc_contents($shellrc_contents);
 }
 
 sub uninstall_files {
@@ -732,41 +672,6 @@ sub cleanup_dangling_symlinks {
     }
 }
 
-sub unconfigure_shell_loader {
-    chdir($home);
-
-    my $shellrc_contents = _read_shellrc_contents();
-
-    # remove shell loader if found
-    $shellrc_contents =~ s{\n. \$HOME/$shellrc_load_filename\n}{}gs;
-
-    _write_shellrc_contents($shellrc_contents);
-}
-
-sub _write_shellrc_contents {
-    my $shellrc_contents = shift;
-
-    if ( !$opts{'dry-run'} ) {
-        open( my $shellrc_out, '>', $shellrc_filename );
-        print $shellrc_out $shellrc_contents;
-        close $shellrc_out;
-    }
-}
-
-sub _read_shellrc_contents {
-    my $shellrc_contents;
-    {
-        local $INPUT_RECORD_SEPARATOR = undef;
-        if ( open( my $shellrc_in, '<', $shellrc_filename ) ) {
-            $shellrc_contents = <$shellrc_in>;
-            close $shellrc_in;
-        }
-        else {
-            $shellrc_contents = '';
-        }
-    }
-    return $shellrc_contents;
-}
 
 sub _run_git {
     my @args = @_;
