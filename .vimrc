@@ -123,18 +123,6 @@ hi Search cterm=NONE ctermfg=grey ctermbg=blue
 :highlight ExtraWhitespace ctermbg=red guibg=red
 :match ExtraWhitespace /\s\+\%#\@<!$/
 
-" auto remove whitespace
-" http://stackoverflow.com/a/1618401/2423187
-fun! StripTrailingWhitespaces()
-    let l = line(".")
-    let c = col(".")
-    %s/\s\+$//e
-    call cursor(l, c)
-endfun
-command StripTrailing call StripTrailingWhitespaces()
-
-autocmd FileType javascript,html,css,perl,c,cpp,java,php,ruby,python autocmd BufWritePre <buffer> :call StripTrailingWhitespaces()
-
 " === Column Limit ===
 " https://stackoverflow.com/a/21406581
 augroup collumnLimit
@@ -181,6 +169,18 @@ set wildmenu
 command Tab set tabstop=4 noexpandtab shiftwidth=4
 command NoTab set tabstop=4 expandtab shiftwidth=4 softtabstop=4
 set tabstop=4
+
+" auto remove whitespace
+" http://stackoverflow.com/a/1618401/2423187
+fun! StripTrailingWhitespaces()
+    let l = line(".")
+    let c = col(".")
+    %s/\s\+$//e
+    call cursor(l, c)
+endfun
+command StripTrailing call StripTrailingWhitespaces()
+
+autocmd FileType javascript,html,css,perl,c,cpp,java,php,ruby,python autocmd BufWritePre <buffer> :call StripTrailingWhitespaces()
 
 let g:gitgutter_enabled = 0
 
