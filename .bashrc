@@ -104,3 +104,10 @@ if diff-so-fancy --colors > /dev/null; then
 else
   export GIT_PAGER="less -R"
 fi
+
+
+# https://github.com/nvbn/thefuck
+# defines 'fuck' as a command to fix the last command
+if command -v thefuck >/dev/null; then
+  eval $(thefuck --alias)
+fi
