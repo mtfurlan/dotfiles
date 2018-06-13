@@ -24,6 +24,7 @@ Plugin 'Xuyuanp/nerdtree-git-plugin'
 Plugin 'vimwiki/vimwiki'
 Plugin 'airblade/vim-gitgutter'
 Plugin 'mileszs/ack.vim'
+Plugin 'AndrewRadev/linediff.vim'
 
 call vundle#end()
 filetype plugin indent on

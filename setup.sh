@@ -7,3 +7,6 @@ if [ -x "$(which apt-get)" ] ; then
 else
   echo "apt-get not installed, fix setup.sh for this platform"
 fi
+
+
+echo "run 'pip install yq' to get the sshScanSubnet function"
