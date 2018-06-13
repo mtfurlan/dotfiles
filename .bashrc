@@ -53,14 +53,6 @@ else
 	color_prompt=
 fi
 
-if [ "$TERM" = "linux" ]; then
-	#term is linux, linux is serial or tty or such
-	ps1_prefix="${debian_chroot:+($debian_chroot)}"
-else
-	#term is not linux, probably fine. Worst case it doesn't work.
-	ps1_prefix="\e]0;\u@\h\a${debian_chroot:+($debian_chroot)}"
-fi
-
 if [ "$color_prompt" = yes ]; then
 	#A way to show if user is in groups wheel, sudo, or adm
 	if [[ `groups` =~ wheel|sudo|adm ]]; then
@@ -73,9 +65,9 @@ if [ "$color_prompt" = yes ]; then
 	hostnamecolor=$(hostname | od | tr ' ' '\n' | awk '{total = total + $1}END{print 30 + (total % 6)}')
 
 	#the first bit just shows the return code if nonzero, in red
-	PS1="$ps1_prefix\[\033[01;31m\]\${?##0}\[\033[00m\]\[\033[01;32m\]\u@\[\e[${hostnamecolor}m\]\h\[\033[00m\]$sudo:\[\033[01;34m\]\w\[\033[00m\]\$ "
+	PS1="${debian_chroot:+($debian_chroot)}\[\033[01;31m\]\${?##0}\[\033[00m\]\[\033[01;32m\]\u@\[\e[${hostnamecolor}m\]\h\[\033[00m\]$sudo:\[\033[01;34m\]\w\[\033[00m\]\$ "
 else
-    PS1="$ps1_prefix\u@\h:\w\$ "
+    PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
 fi
 unset color_prompt
 
