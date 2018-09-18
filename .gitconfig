@@ -3,13 +3,24 @@
 	email = mtfurlan@i3detroit.org
 [core]
 	editor = vim
-	pager = less -R
 	excludesfile = ~/.gitglobalignore
 
 [color]
-	ui = auto
+	ui = true
 [push]
 	default = simple
 	followTags = true
 [merge]
 	tool = vimdiff
+[color "diff-highlight"]
+	oldNormal = red bold
+	oldHighlight = red bold 52
+	newNormal = green bold
+	newHighlight = green bold 22
+[color "diff"]
+	meta = yellow
+	frag = magenta bold
+	commit = yellow bold
+	old = red bold
+	new = green bold
+	whitespace = red reverse

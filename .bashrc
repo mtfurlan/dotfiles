@@ -96,3 +96,10 @@ if ! shopt -oq posix; then
   fi
   complete -cf sudo
 fi
+
+
+if diff-so-fancy --colors > /dev/null; then
+  export GIT_PAGER="diff-so-fancy | less --tabs=4 -RFX"
+else
+  export GIT_PAGER="less -R"
+fi

@@ -10,3 +10,4 @@ fi
 
 
 echo "run 'pip install yq' to get the sshScanSubnet function"
+echo "run 'npm i -g diff-so-fancy' for git diff to work better"
