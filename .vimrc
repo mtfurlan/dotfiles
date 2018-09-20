@@ -25,6 +25,7 @@ Plugin 'vimwiki/vimwiki'
 Plugin 'airblade/vim-gitgutter'
 Plugin 'mileszs/ack.vim'
 Plugin 'AndrewRadev/linediff.vim'
+Plugin 'chrisbra/csv.vim'
 
 call vundle#end()
 filetype plugin indent on
@@ -144,11 +145,12 @@ let g:vimwiki_folding='expr'
 let g:vimwiki_url_maxsave = 0
 
 " =============== Search ==============
-if executable('ag')
-  let g:ackprg = 'ag --vimgrep'
-endif
+"if executable('ag')
+"  let g:ackprg = 'ag --vimgrep'
+"endif
 cnoreabbrev Ack Ack!
-nnoremap <Leader>a :Ack!<Space>
+noremap <Leader>a :Ack! <cword>
+noremap <Leader>s :Ack!<Space>
 cnoreabbrev ag Ack!
 cnoreabbrev aG Ack!
 cnoreabbrev Ag Ack!

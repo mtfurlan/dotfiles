@@ -97,6 +97,7 @@ if ! shopt -oq posix; then
   complete -cf sudo
 fi
 
+[ -f ~/.fzf.bash ] && source ~/.fzf.bash
 
 if diff-so-fancy --colors > /dev/null; then
   export GIT_PAGER="diff-so-fancy | less --tabs=4 -RFX"
