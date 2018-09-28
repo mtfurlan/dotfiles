@@ -4,3 +4,4 @@
 .vim/bundle recurse
 setup.sh exec
 setup.sh skip
+README.md skip
