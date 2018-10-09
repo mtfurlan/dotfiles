@@ -25,15 +25,30 @@ show_help () {
     echo "    target specification: whatever is valid for nmap"
 }
 
-if [ $# -eq 0 ] || [[ $1 == "-h" ]] || [[ $1 == "--help" ]]; then
+firstArg=${1:-}
+if [[ $firstArg == "-h" ]] || [[ $firstArg == "--help" ]]; then
     show_help
     exit 0
 fi
 
+if [ $# -eq 0 ]; then
+    #no arguments
+    source sind.sh
 
-#echo "scanning $1"
+    IFS=$'\r\n' GLOBIGNORE='*' command eval  'subnets=($(ip -o -f inet addr show | awk "/scope global/ {print \$2 \" \" \$4}" | column -t))'
+    subnetChoice=$(sind "Choose one" "${subnets[@]}")
+    subnet=$(echo "${subnets[$subnetChoice]}" | awk '{print $2}')
+else
+    subnet=$firstArg
+fi
 
-hosts=$(sudo nmap -Pn -oX - -p22 $1 | $XQ -c '.nmaprun.host[] |  [(.address | if type=="array" then [.[0]."@addr", .[1]."@addr", .[1]."@vendor"] else [."@addr"] end), .ports.port.state."@state"]' | grep open | sed 's/["\[\]]*//g' | sed 's/,open$//' | sed 's/,/, /g')
+echo "scanning $subnet"
+
+nmapOutput=$(sudo nmap -Pn -oX - -p22 $subnet > /tmp/nmapOutput)
+
+stage2=$(cat /tmp/nmapOutput | $XQ -c '.nmaprun.host[] |  [(.address | if type=="array" then [.[0]."@addr", .[1]."@addr", .[1]."@vendor"] else [."@addr"] end), .ports.port.state."@state"]')
+
+hosts=$(echo "$stage2" | grep open | sed 's/["\[\]]*//g' | sed 's/,open$//' | sed 's/,/, /g')
 #set +e #read returns nonzero, is fine
 #read -r -d '' hosts << EOM
 #10.4.4.1,80:2A:A8:8F:44:33,Ubiquiti Networks
@@ -64,4 +79,4 @@ while read line ; do
     hostname=$(echo $line | cut -d' ' -f2)
     hosts="${hosts/$ip/$ip, $hostname}"
 done <<< "$($AVAHI_RESOLVE_ADDRESS $(echo "$hosts" | cut -d, -f1) 2>/dev/null)"
-echo "$hosts"
+echo "$hosts" | column -t -s,
