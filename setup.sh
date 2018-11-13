@@ -10,6 +10,7 @@ if [ -x "$(which apt-get)" ] ; then
 else
   echo "apt-get not installed, fix setup.sh for this platform"
 fi
+
 setup_github() {
   read -r -p "Brand new keys? [Y/n] " response
   case "$response" in
@@ -27,7 +28,8 @@ setup_github() {
   change_dofiles_remote
 }
 change_dofiles_remote() {
-  if ! ssh -T -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i ~/.ssh/github_rsa git@github.com ; then
+  echo ""
+  if ssh -T -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no git@github.com 2>&1 | grep "successfully authenticated" ; then
     read -r -p "You going to fix that key? [y/N] " response
     case "$response" in
       [yY][eE][sS]|[yY])
