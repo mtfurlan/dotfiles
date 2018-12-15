@@ -1,0 +1,206 @@
+#!/bin/bash
+set -u
+
+MOUNT_POINT=/mnt/img
+VERBOSE=1
+rpi_shell=0
+sd=""
+hostname=""
+
+#So this is in progress between what I had and didn't save because I thought
+# it was committed, and things stolen from
+# http://peter.lorenzen.us/linux/headless-raspberry-pi-configuration
+
+usage() {
+    set +x
+    [ $# == 0 ] || echo $*
+    echo "usage: rpido <options> zipfile"
+    echo " -w             write raspian to sdcard"
+    echo " -h name    sets /etc/hostname on rpi"
+    echo " -s             start shell on raspian"
+    echo "configures stuff"
+    exit
+}
+
+vecho() { [ $VERBOSE -lt 1 ] || echo $* >/dev/stderr; }
+vvecho() { [ $VERBOSE -lt 2 ] || echo $* >/dev/stderr; }
+SUDO() {
+    vecho SUDO $*
+    sudo $*
+}
+
+dd_somewhere () {
+    dev=$1
+    if [ ! -e "$dev" ]; then
+        echo "$dev doesn't exist"
+        exit 1
+    fi
+    echo "dding to $dev"
+    SUDO dd if="$zipdir/$imgfile" of=$dev bs=1M status=progress
+}
+
+
+mount_loop() {
+    bootStart=$(parted -s "$imgfile" unit B print | awk '/^Number/{p=1;next}; p{gsub(/[^[:digit:]]/, "", $2); print $2}' | head -n1)
+    bootSize=$(parted -s "$imgfile" unit B print | awk '/^Number/{p=1;next}; p{gsub(/[^[:digit:]]/, "", $4); print $4}' | head -n1)
+    rootStart=$(parted -s "$imgfile" unit B print | awk '/^Number/{p=1;next}; p{gsub(/[^[:digit:]]/, "", $2); print $2}' | head -n2 | tail -n1)
+    rootSize=$(parted -s "$imgfile" unit B print | awk '/^Number/{p=1;next}; p{gsub(/[^[:digit:]]/, "", $4); print $4}' | head -n2 | tail -n1)
+    #parted -s "$imgfile" unit B print
+    #echo "bootStart: $bootStart"
+    #echo "bootSize: $bootSize"
+    #echo "rootStart: $rootStart"
+    #echo "rootSize: $rootSize"
+    #exit 50
+
+    SUDO mount -o loop,offset="$rootStart",sizelimit="$rootSize" "$imgfile" $MOUNT_POINT
+    SUDO mount -o loop,offset="$bootStart",sizelimit="$bootSize" "$imgfile" $MOUNT_POINT/boot
+}
+
+is_mounted() {
+    mount | grep $(realpath $1) >/dev/null
+}
+
+setup_chroot() {
+    if [[ ! -f /usr/bin/qemu-arm-static ]]; then
+        echo "Install qemu arm"
+        return
+    fi
+    SUDO rsync /usr/bin/qemu-arm-static ${MOUNT_POINT}/usr/bin/
+    for f in proc dev sys;do
+        is_mounted $MOUNT_POINT/$f || SUDO mount --bind /$f $MOUNT_POINT/$f
+    done
+}
+
+
+unmount_all() {
+    [ ! -z "$MOUNT_POINT" ] || return 1
+    #[ -z "$keep_mount" ] || return 0
+    for f in proc dev sys;do
+        is_mounted $MOUNT_POINT/$f && SUDO umount $MOUNT_POINT/$f
+    done
+    SUDO umount $MOUNT_POINT/boot
+    sleep 1
+    SUDO umount $MOUNT_POINT
+}
+
+
+PARAMS=""
+
+while (( "$#" )); do
+    case "$1" in
+        -h|--host)
+            hostname=$2
+            shift 2
+            ;;
+        -s|--shell)
+            rpi_shell=1
+            shift 1
+            ;;
+        -v|--verbose)
+            VERBOSE=1
+            shift 1
+            ;;
+        -vv)
+            VERBOSE=2
+            shift 1
+            ;;
+        -q|--quiet)
+            VERBOSE=0
+            shift 1
+            ;;
+        -w|--write)
+            sd=$2
+            shift 2
+            ;;
+        --) # end argument parsing
+            shift
+            break
+            ;;
+        -*|--*=) # unsupported flags
+            echo "Error: Unsupported flag $1" >&2
+            usage
+            exit 1
+            ;;
+        *) # preserve positional arguments
+            PARAMS="$PARAMS $1"
+            shift
+            ;;
+    esac
+done
+
+# set positional arguments in their proper place
+eval set -- "$PARAMS"
+if [ $# -eq 0 ]; then
+    usage
+    exit 1;
+fi
+[ $VERBOSE -lt 2 ] || set -x
+
+#get zipfile, confirm it exists
+zipfile=${1:-}
+if [[ ! -f "$zipfile" ]]; then
+    echo "zipfile/imgfile doesn't exist";
+    exit 1
+fi
+
+zipdir=$(dirname $(realpath "${zipfile}"))
+
+if [ ${zipfile: -4} == ".zip" ]; then
+    imgfile=$(echo "$zipfile" | sed 's/zip$/img/')
+    cd $zipdir
+    if [[ ! -f "$imgfile" ]]; then
+        unzip $zipfile
+        if [[ ! -f "$imgfile" ]]; then
+          echo "Issue unzipping $zipfile";
+          exit 1
+        fi
+    fi
+    echo "$zipfile in $zipdir to $imgfile"
+else
+    imgfile=$zipfile
+fi
+
+if [[ ! -z "$hostname" ]]; then echo "hostname: $hostname"; fi
+if [ "$rpi_shell" -eq 1 ]; then echo "launching shell"; fi
+if [[ ! -z "$sd" ]]; then echo "writing to sd $sd"; fi
+
+
+#START OF ACTUAL STUFF
+mount_loop
+if [ -z "${MOUNT_POINT}" -o ! -f "$MOUNT_POINT/etc/rpi-issue" -o ! -f "$MOUNT_POINT/boot/issue.txt" ]; then
+    usage raspbian root not as expected
+fi
+#now we're mounted in memory
+
+SUDO touch $MOUNT_POINT/boot/ssh
+cd $MOUNT_POINT
+SUDO mv home/pi home/mark
+[ -z "$hostname" ] || echo $hostname | SUDO tee $MOUNT_POINT/etc/hostname >/dev/null
+SUDO sed -i 's/pi/mark/g' etc/passwd etc/shadow etc/group
+SUDO sed -i 's/gmarko/gpio/g' etc/passwd etc/shadow etc/group
+SUDO git clone https://github.com/mtfurlan/dotfiles.git $MOUNT_POINT/home/mark/.dotfiles
+SUDO chown -R 1000:1000 home/mark/
+cd ../
+
+
+if [ "$rpi_shell" -eq 1 ]; then
+    setup_chroot
+    SUDO chroot ${MOUNT_POINT} "bash -i"
+fi
+
+
+unmount_all
+
+if [[ ! -z "$sd" ]]; then
+    dd_somewhere $sd
+fi
+
+
+## Notes
+# swap drive
+# sudo dphys-swapfile swapoff
+# sudo dphys-swapfile uninstall
+# sudo update-rc.d dphys-swapfile remove
+# find uuid at /dev/disk/by-uuid
+# in fstab: UUID=a0345e19-192d-49cf-8402-cc9aacc3c473 none swap sw 0 0
+# sudo swapon -a
