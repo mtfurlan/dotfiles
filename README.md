@@ -4,3 +4,7 @@ Random tools
 * https://github.com/sharkdp/bat
 * https://github.com/denilsonsa/prettyping
 * https://github.com/junegunn/fzf
+* https://github.com/akavel/up
+Thinkpad-specific
+* https://github.com/teleshoes/tpacpi-bat
+* https://github.com/morgwai/tpbat-utils-acpi

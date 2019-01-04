@@ -45,8 +45,8 @@ set autoread "Reload files changed outside vim
 " Keep undo history across sessions, by storing in file.
 " Only works all the time.
 if has('persistent_undo')
-  silent !mkdir ~/.vim/backups > /dev/null 2>&1
-  set undodir=~/.vim/backups
+  silent !mkdir ~/.vim/undodir > /dev/null 2>&1
+  set undodir=~/.vim/undodir
   set undofile
 endif
 
@@ -171,7 +171,12 @@ set wildmenu
 " default tab settings, should get overridden...
 command Tab set tabstop=4 noexpandtab shiftwidth=4
 command NoTab set tabstop=4 expandtab shiftwidth=4 softtabstop=4
-set tabstop=4
+if get(g:, '_has_set_default_indent_settings', 0) == 0
+  set expandtab
+  set tabstop=4
+  set shiftwidth=4
+  let g:_has_set_default_indent_settings = 1
+endif
 
 " auto remove whitespace
 " http://stackoverflow.com/a/1618401/2423187
@@ -184,6 +189,8 @@ endfun
 command StripTrailing call StripTrailingWhitespaces()
 
 autocmd FileType javascript,html,css,perl,c,cpp,java,php,ruby,python autocmd BufWritePre <buffer> :call StripTrailingWhitespaces()
+
+autocmd BufNewFile,BufRead *.mjs set filetype=javascript
 
 let g:gitgutter_enabled = 0
 
