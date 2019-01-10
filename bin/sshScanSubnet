@@ -44,10 +44,11 @@ fi
 
 echo "scanning $subnet"
 
-nmapOutput=$(sudo nmap -Pn -oX - -p22 $subnet > /tmp/nmapOutput)
+sudo nmap -Pn -oX - -p22 $subnet > /tmp/nmapOutput
 
 stage2=$(cat /tmp/nmapOutput | $XQ -c '.nmaprun.host[] |  [(.address | if type=="array" then [.[0]."@addr", .[1]."@addr", .[1]."@vendor"] else [."@addr"] end), .ports.port.state."@state"]')
 
+#echo -e "$stage2\n\n"
 hosts=$(echo "$stage2" | grep open | sed 's/["\[\]]*//g' | sed 's/,open$//' | sed 's/,/, /g')
 #set +e #read returns nonzero, is fine
 #read -r -d '' hosts << EOM
