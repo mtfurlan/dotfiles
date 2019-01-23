@@ -1,0 +1,35 @@
+#!/bin/bash
+set -e
+cd $(dirname "$0")
+
+# Reset
+Reset='\033[0m'       # Text Reset
+
+# Regular Colors
+Black='\033[0;30m'        # Black
+Red='\033[0;31m'          # Red
+Green='\033[0;32m'        # Green
+Yellow='\033[0;33m'       # Yellow
+Blue='\033[0;34m'         # Blue
+Purple='\033[0;35m'       # Purple
+Cyan='\033[0;36m'         # Cyan
+White='\033[0;37m'        # White
+
+excludes=("$HOME/mediawiki" "$HOME/." "$HOME/eudyptula/system/linux")
+
+function locateAllRepos {
+    locate "$HOME/**/.git" -0 | grep -zFv ${excludes[@]/#/-e } | sed 's/\.git$//' -z | xargs --null -I {} realpath --relative-to="$HOME" {} | sed 's/^/.\//'
+    #so we want IFS to be newline for the loop bit, but default for above
+    IFS=$'\n'
+}
+
+for repo in $(locateAllRepos); do
+    echo -ne "$Purple$repo$Reset: "
+    pushd "$HOME/$repo" >/dev/null
+    updates=$(git fetch --all 2>&1 | grep '\->' || true)
+    git status -b --porcelain | sed 's/^## \(.\+\)/(\1)/; s/^\([? ]\)/    \1/g'
+    if [ ! -z "$updates" ]; then
+        echo "$updates"
+    fi
+    popd >/dev/null
+done
