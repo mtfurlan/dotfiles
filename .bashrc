@@ -1,6 +1,37 @@
 #.bash_profile, executed by login shells
 #Also executed by .bashrc, so all shells really
 
+
+# Check if we support colours
+__colour_enabled() {
+    local -i colors=$(tput colors 2>/dev/null)
+    [[ $? -eq 0 ]] && [[ $colors -gt 2 ]]
+}
+
+if __colour_enabled; then
+    # define colours
+    # Wrap the colour codes between \[ and \], so that
+    # bash counts the correct number of characters for line wrapping:
+     Red='\[\033[01;31m\]';  BRed='\[\e[1;31m\]'
+     Gre='\[\033[01;32m\]';  BGre='\[\e[1;32m\]'
+     Yel='\[\e[0;33m\]';  BYel='\[\e[1;33m\]'
+     Blu='\[\033[01;34m\]';  BBlu='\[\e[1;34m\]'
+     Mag='\[\e[0;35m\]';  BMag='\[\e[1;35m\]'
+     Cya='\[\e[0;36m\]';  BCya='\[\e[1;36m\]'
+     Whi='\[\e[0;37m\]';  BWhi='\[\e[1;37m\]'
+     None='\[\e[0m\]' # Return to default colour
+else
+     unset Red;  unset BRed
+     unset Gre;  unset BGre
+     unset Yel;  unset BYel
+     unset Blu;  unset BBlu
+     unset Mag;  unset BMag
+     unset Cya;  unset BCya
+     unset Whi;  unset BWhi
+     unset None
+fi
+
+
 #allow machine specific config
 if [ -f ~/.bash_local ]; then
     . ~/.bash_local
@@ -44,16 +75,18 @@ if [ -z "${debian_chroot:-}" ] && [ -r /etc/debian_chroot ]; then
     debian_chroot=$(cat /etc/debian_chroot)
 fi
 
-if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
-    # We have color support; assume it's compliant with Ecma-48
-    # (ISO/IEC-6429). (Lack of such support is extremely rare, and such
-    # a case would tend to support setf rather than setaf.)
-    color_prompt=yes
-else
-    color_prompt=
-fi
 
-if [ "$color_prompt" = yes ]; then
+export GIT_PS1_SHOWDIRTYSTATE=1           # '*'=unstaged, '+'=staged
+export GIT_PS1_SHOWSTASHSTATE=1           # '$'=stashed
+export GIT_PS1_SHOWUNTRACKEDFILES=1       # '%'=untracked
+export GIT_PS1_SHOWUPSTREAM="auto"     # 'u='=no difference, 'u+1'=ahead by 1 commit
+export GIT_PS1_STATESEPARATOR=" "
+export GIT_PS1_DESCRIBE_STYLE="describe"  # detached HEAD style:
+
+
+if __colour_enabled; then
+    export GIT_PS1_SHOWCOLORHINTS=1
+
     #A way to show if user is in groups wheel, sudo, or adm
     if [[ `groups` =~ wheel|sudo|adm ]]; then
         sudo="\[\e[32m\](s)\[\e[m\]"
@@ -65,11 +98,12 @@ if [ "$color_prompt" = yes ]; then
     hostnamecolor=$(hostname | od | tr ' ' '\n' | awk '{total = total + $1}END{print 30 + (total % 6)}')
 
     #the first bit just shows the return code if nonzero, in red
-    PS1="${debian_chroot:+($debian_chroot)}\[\033[01;31m\]\${?##0}\[\033[00m\]\[\033[01;32m\]\u@\[\e[${hostnamecolor}m\]\h\[\033[00m\]$sudo:\[\033[01;34m\]\w\[\033[00m\]\$ "
+    myFancyPS1Start="${debian_chroot:+($debian_chroot)}$Red\${?##0}$Gre\u@\[\e[${hostnamecolor}m\]\h$sudo:$Blu\w$None"
+    myFancyPS1End="$None$ "
+    PROMPT_COMMAND='__git_ps1 "$myFancyPS1Start" "$myFancyPS1End"'
 else
     PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
 fi
-unset color_prompt
 
 # enable color support of ls and also add handy aliases
 if [ -x /usr/bin/dircolors ]; then
@@ -97,7 +131,9 @@ if ! shopt -oq posix; then
     complete -cf sudo
 fi
 
-[ -f ~/.fzf.bash ] && source ~/.fzf.bash
+if [ -f ~/.fzf.bash ]; then
+    source ~/.fzf.bash
+fi
 
 if which diff-so-fancy > /dev/null; then
     export GIT_PAGER="diff-so-fancy | less --tabs=4 -RFX"
@@ -137,3 +173,5 @@ preexec() {
     #echo DISPLAY = $DISPLAY, display.txt = `cat ~/.display.txt`, STY = $STY, TMUX = $TMUX
 }
 trap 'preexec' DEBUG
+
+set -o vi
