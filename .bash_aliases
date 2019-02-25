@@ -24,6 +24,19 @@ alias duc="du --max-depth=1 -ha | sort -rh | sed 's/\.\///' | sed /^0/d"
 
 mkcd () { mkdir -p "$@" && cd "$@"; }
 
+gcd()
+{
+    # based on https://unix.stackexchange.com/a/97958/60480
+    local tmp=$(mktemp)
+    local repo_name
+
+    git clone "$@" 2>&1 | tee $tmp
+    repo_name=$(awk -F\' '/Cloning into/ {print $2}' $tmp)
+    rm $tmp
+    printf "changing to directory %s\n" "$repo_name"
+    cd "$repo_name"
+}
+
 extract () {
     if [ -f "$1" ] ; then
       case $1 in
