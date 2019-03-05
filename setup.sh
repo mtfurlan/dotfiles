@@ -56,9 +56,35 @@ if [ ! -f ~/.ssh/github_rsa ]; then
   esac
 fi
 
+get_github_latest_release_file() {
+  curl -s "$1/releases/latest" | sed "s/.*href=\"\(.*\)\">redirected.*/\1\/$2/"
+}
 
-echo "run 'pip install yq' to get the sshScanSubnet function"
-echo "run 'npm i -g diff-so-fancy' for git diff to work better"
+install_tools() {
+  sudo apt install python3-dev python3-pip python3-setuptools -y
+  sudo pip3 install thefuck yq
+
+  git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf || true
+  ~/.fzf/install --completion --key-bindings --no-update-rc
+
+  wget -P ~/.local/bin $(get_github_latest_release_file https://github.com/akavel/up up)
+
+  # TODO: update this, make it not run on wrong arch?
+  if [ "$(uname -m)" == "x86_64" ]; then
+    wget -P /tmp https://github.com/sharkdp/bat/releases/download/v0.10.0/bat_0.10.0_amd64.deb
+    sudo dpkg -i /tmp/bat_0.10.0_amd64.deb
+  else
+    echo "can't install up for this arch, fix setup script"
+  fi
+}
+
+read -r -p "install random tools(thefuck, yq, fzf, up)? [y/N] " response
+case "$response" in
+  [yY][eE][sS]|[yY])
+    install_tools
+    ;;
+esac
+
 echo "if it's a thinkpad, do battery management setup"
 echo "    tpacpi-bat: https://github.com/teleshoes/tpacpi-bat"
 echo "    TODO: https://github.com/morgwai/tpbat-utils-acpi"
