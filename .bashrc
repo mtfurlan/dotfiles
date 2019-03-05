@@ -131,6 +131,8 @@ if ! shopt -oq posix; then
     complete -cf sudo
 fi
 
+set -o vi
+
 if [ -f ~/.fzf.bash ]; then
     source ~/.fzf.bash
 fi
@@ -173,5 +175,3 @@ preexec() {
     #echo DISPLAY = $DISPLAY, display.txt = `cat ~/.display.txt`, STY = $STY, TMUX = $TMUX
 }
 trap 'preexec' DEBUG
-
-set -o vi
