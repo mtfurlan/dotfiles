@@ -26,6 +26,7 @@ Plugin 'airblade/vim-gitgutter'
 Plugin 'mileszs/ack.vim'
 Plugin 'AndrewRadev/linediff.vim'
 Plugin 'chrisbra/csv.vim'
+Plugin 'posva/vim-vue'
 
 call vundle#end()
 filetype plugin indent on
@@ -178,6 +179,8 @@ if get(g:, '_has_set_default_indent_settings', 0) == 0
   let g:_has_set_default_indent_settings = 1
 endif
 
+autocmd BufNewFile,BufRead *.mjs set filetype=javascript
+
 " auto remove whitespace
 " http://stackoverflow.com/a/1618401/2423187
 fun! StripTrailingWhitespaces()
@@ -190,7 +193,6 @@ command StripTrailing call StripTrailingWhitespaces()
 
 autocmd FileType javascript,html,css,perl,c,cpp,java,php,ruby,python autocmd BufWritePre <buffer> :call StripTrailingWhitespaces()
 
-autocmd BufNewFile,BufRead *.mjs set filetype=javascript
 
 let g:gitgutter_enabled = 0
 
