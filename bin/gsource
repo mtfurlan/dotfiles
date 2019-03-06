@@ -1,0 +1,98 @@
+#!/bin/bash
+set -euo pipefail
+
+#set -x
+
+help () {
+    echo "Usage: gsource FILE [LINE NUMBER]"
+    echo "Link to the online git file, with optional line number"
+    echo "  -h, --help       display this help and exit"
+}
+
+TEMP=`getopt -o h --long help -n 'gsource' -- "$@"`
+if [ $? != 0 ] ; then
+    echo "Something wrong with getopt" >&2
+    exit 1
+fi
+
+eval set -- "$TEMP"
+
+help=false
+# extract options and their arguments into variables.
+while true ; do
+    case "$1" in
+        -h|--help) help=true ; shift ;;
+        --) shift ; break ;;
+        *) echo "Internal error!" ; exit 1 ;;
+    esac
+done
+
+if [[ $help = true ]]; then
+    help
+    exit 0
+fi
+
+if [[ $# -lt 1 ]]; then
+    help
+    exit 1
+fi
+relFile=$1
+if [[ ! -f $relFile ]]; then
+    echo "file '$relFile' does not exist"
+    exit 2
+fi
+
+linkLine=0
+if [[ $# -eq 2 ]]; then
+    line=$2
+    linkLine=1
+fi
+
+# get file relative to git root
+gitRoot=$(git rev-parse --show-toplevel)
+fullFile=$(realpath $relFile) # get full path of relative filepath
+file=${fullFile#"$gitRoot/"} # remove prefix of $gitRoot/
+
+# get git remote URL
+# just picks the first
+set +e
+url=$(git config --get remote.origin.url)
+if [[ $? -ne 0 ]]; then
+    echo "no remote?"
+    exit 1
+fi
+set -e
+
+# set provider specific stuff
+lineStr=""
+if [[ $url == *"bitbucket.org"* ]]; then
+    provider="bitbucket.org"
+    urlThing="src"
+    if [[ $linkLine -ne 0 ]]; then
+        lineStr="#lines-$line"
+    fi
+elif [[ $url == *"github.com"* ]]; then
+    provider="github.com"
+    urlThing="blob"
+    if [[ $linkLine -ne 0 ]]; then
+        lineStr="#L$line"
+    fi
+fi
+
+# parse remote URL (git@ or https://) to something like "tomesoftware/chad-db"
+repo=$(echo $url | sed 's/.*[\/:]\([^\/]*\)\/\([^\/]*\).git$/\1\/\2/')
+
+# get current branch or commit hash
+# https://stackoverflow.com/a/1593487/2423187
+head=$(git symbolic-ref -q HEAD || true)
+head=${head##refs/heads/}
+head=${head:-$(git rev-parse HEAD)}
+
+#echo "provider: $provider"
+#echo "repo: $repo"
+#echo "urlThing: $urlThing"
+#echo "head: $head"
+#echo "file: $file"
+
+# print the URL
+echo "https://$provider/$repo/$urlThing/$head/$file$lineStr"
