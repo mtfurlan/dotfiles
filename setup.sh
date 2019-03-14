@@ -18,7 +18,7 @@ setup_github() {
     [nN][oO]|[nN])
       echo "Alright setup your own key"
       read -n 1 -s -r -p "Press any key to continue"
-      change_dofiles_remote
+      verify_github_remote
       return
       ;;
   esac
@@ -26,9 +26,9 @@ setup_github() {
   cat ~/.ssh/github_rsa.pub
   echo "Add that to github"
   read -n 1 -s -r -p "Press any key to continue"
-  change_dofiles_remote
+  verify_github_remote
 }
-change_dofiles_remote() {
+verify_github_remote() {
   echo ""
   if ssh -T -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no git@github.com 2>&1 | grep "successfully authenticated" ; then
     read -r -p "You going to fix that key? [y/N] " response
@@ -41,10 +41,6 @@ change_dofiles_remote() {
     esac
     return;
   fi
-  if git remote -v | grep https ; then
-    git remote remove origin
-    git remote add origin git@github.com:mtfurlan/dotfiles.git
-  fi
 }
 
 if [ ! -f ~/.ssh/github_rsa ]; then
@@ -52,6 +48,16 @@ if [ ! -f ~/.ssh/github_rsa ]; then
   case "$response" in
     [yY][eE][sS]|[yY])
       setup_github
+      ;;
+  esac
+fi
+
+if git remote -v | grep https ; then
+  read -r -p "Change github remote to not be https? [y/N] " response
+  case "$response" in
+    [yY][eE][sS]|[yY])
+        git remote remove origin
+        git remote add origin git@github.com:mtfurlan/dotfiles.git
       ;;
   esac
 fi
