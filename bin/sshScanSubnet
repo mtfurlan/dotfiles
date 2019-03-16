@@ -72,6 +72,8 @@ hosts=$(echo "$stage2" | grep open | sed 's/["\[\]]*//g' | sed 's/,open$//' | se
 #echo "$hosts"
 #echo -e "\n\n"
 
+count=$(echo "$hosts" | wc -l);
+echo "resolving hostnames for $count hosts"
 #get mdns names
 while read line ; do
     #line is "ip      name"
@@ -80,4 +82,4 @@ while read line ; do
     hostname=$(echo $line | cut -d' ' -f2)
     hosts="${hosts/$ip/$ip, $hostname}"
 done <<< "$($AVAHI_RESOLVE_ADDRESS $(echo "$hosts" | cut -d, -f1) 2>/dev/null)"
-echo "$hosts" | column -t -s,
+echo "$hosts" | perl -pe 's/^([^,]*),(?=[^,]*,[^,]*$)/\1, ,/' | column -t -s,
