@@ -1,16 +1,33 @@
 #!/bin/bash
 set -euo pipefail
-IFS=$'\n\t'
 cd $(dirname "$0")
 
-echo "trying to install things"
+help() {
+  echo "install stuff, setup github keys, download random tools"
+  echo "       -u, --update"
+  echo "                only update local tools, don't run full setup"
+  echo "       -h, --help"
+  echo "                display this help"
+}
 
-if [ -x "$(which apt-get)" ] ; then
-  sudo apt-get update
-  sudo apt-get install vim-nox tmux git sl silversearcher-ag curl tree
-else
-  echo "apt-get not installed, fix setup.sh for this platform"
+# getopt short options go together, long options have commas
+TEMP=`getopt -o uh --long update,help -n 'test.sh' -- "$@"`
+if [ $? != 0 ] ; then
+    echo "Something wrong with getopt" >&2
+    exit 1
 fi
+eval set -- "$TEMP"
+
+update=false
+while true ; do
+    case "$1" in
+        -u|--update) update=true ; shift ;;
+        -h|--help) help ; exit 0 ;;
+        --) shift ; break ;;
+        *) echo "Internal error!" ; exit 1 ;;
+    esac
+done
+
 
 setup_github() {
   read -r -p "Brand new keys? [Y/n] " response
@@ -47,17 +64,31 @@ change_dofiles_remote() {
   fi
 }
 
-if [ ! -f ~/.ssh/github_rsa ]; then
-  read -r -p "Setup github keys? [y/N] " response
-  case "$response" in
-    [yY][eE][sS]|[yY])
-      setup_github
-      ;;
-  esac
-fi
 
 get_github_latest_release_file() {
   curl -s "$1/releases/latest" | sed "s/.*href=\"\(.*\)\">redirected.*/\1\/$2/"
+}
+
+update_tools() {
+
+  batVersion=$(curl -s https://github.com/sharkdp/bat/releases/latest | sed 's/.*releases\/tag\/v\([0-9.]*\)">redirected.*/\1/')
+  batInstalledVersion=$(dpkg -s bat 2>/dev/null | grep Version | sed 's/Version: //') || true
+  echo "bat version: $batVersion, installedVersion: $batInstalledVersion"
+
+  if [ "$batInstalledVersion" != "$batVersion" ]; then
+    if [ "$(uname -m)" == "x86_64" ]; then
+      wget -q -O "/tmp/bat_${batVersion}_amd64.deb" "https://github.com/sharkdp/bat/releases/download/v$batVersion/bat_${batVersion}_amd64.deb"
+      sudo dpkg -i /tmp/bat_0.10.0_amd64.deb
+    else
+      echo "can't install up for this arch, fix setup script"
+    fi
+  fi
+
+  pushd ~/.fzf
+  git pull
+  popd
+
+  wget -q -O ~/.local/bin/up $(get_github_latest_release_file https://github.com/akavel/up up)
 }
 
 install_tools() {
@@ -67,25 +98,44 @@ install_tools() {
   git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf || true
   ~/.fzf/install --completion --key-bindings --no-update-rc
 
-  wget -P ~/.local/bin $(get_github_latest_release_file https://github.com/akavel/up up)
-
-  # TODO: update this, make it not run on wrong arch?
-  if [ "$(uname -m)" == "x86_64" ]; then
-    wget -P /tmp https://github.com/sharkdp/bat/releases/download/v0.10.0/bat_0.10.0_amd64.deb
-    sudo dpkg -i /tmp/bat_0.10.0_amd64.deb
-  else
-    echo "can't install up for this arch, fix setup script"
-  fi
+  update_tools
 }
 
-read -r -p "install random tools(thefuck, yq, fzf, up)? [y/N] " response
-case "$response" in
-  [yY][eE][sS]|[yY])
-    install_tools
-    ;;
-esac
 
-echo "if it's a thinkpad, do battery management setup"
-echo "    tpacpi-bat: https://github.com/teleshoes/tpacpi-bat"
-echo "    TODO: https://github.com/morgwai/tpbat-utils-acpi"
+setup() {
+  echo "trying to install things"
+
+  if [ -x "$(which apt-get)" ] ; then
+    sudo apt-get update
+    sudo apt-get install vim-nox tmux git sl silversearcher-ag curl tree
+  else
+    echo "apt-get not installed, fix setup.sh for this platform"
+  fi
+  if [ ! -f ~/.ssh/github_rsa ]; then
+    read -r -p "Setup github keys? [y/N] " response
+    case "$response" in
+      [yY][eE][sS]|[yY])
+        setup_github
+        ;;
+    esac
+  fi
+
+  read -r -p "install random tools(thefuck, yq, fzf, up)? [y/N] " response
+  case "$response" in
+    [yY][eE][sS]|[yY])
+      install_tools
+      ;;
+  esac
+
+  echo "if it's a thinkpad, do battery management setup"
+  echo "    tpacpi-bat: https://github.com/teleshoes/tpacpi-bat"
+  echo "    TODO: https://github.com/morgwai/tpbat-utils-acpi"
+}
+
+
+if [ "$update" = true ]; then
+  update_tools
+else
+  setup
+fi
 

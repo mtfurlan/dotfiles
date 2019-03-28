@@ -181,6 +181,10 @@ endif
 
 autocmd BufNewFile,BufRead *.mjs set filetype=javascript
 
+" Don't hide characters in markdown
+let g:markdown_syntax_conceal = 0
+let g:vimwiki_conceallevel=0
+
 " auto remove whitespace
 " http://stackoverflow.com/a/1618401/2423187
 fun! StripTrailingWhitespaces()
@@ -191,7 +195,7 @@ fun! StripTrailingWhitespaces()
 endfun
 command StripTrailing call StripTrailingWhitespaces()
 
-autocmd FileType javascript,html,css,perl,c,cpp,java,php,ruby,python autocmd BufWritePre <buffer> :call StripTrailingWhitespaces()
+autocmd FileType typescript,javascript,html,css,perl,c,cpp,java,php,ruby,python autocmd BufWritePre <buffer> :call StripTrailingWhitespaces()
 
 
 let g:gitgutter_enabled = 0
@@ -209,3 +213,7 @@ function! ToggleGutter()
     GitGutterEnable
   endif
 endfunction
+
+set fileformat=unix
+set fileformats=unix,dos
+"set nobinary

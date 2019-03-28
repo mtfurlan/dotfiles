@@ -16,9 +16,8 @@ alias glog="git log --graph --all --pretty=format:'%Cred%h%Creset -%C(yellow)%d%
 alias gammend='GIT_COMMITTER_DATE=\"`git log -1 --format=%cd`\" git commit --amend'
 
 alias ix="curl -F 'f:1=<-' ix.io"
-#alias sprunge="curl -F 'sprunge=<-' http://sprunge.us"
-
-alias irc="mosh agmlego -- screen -xdUS irssi"
+alias qr='curl -F-=\<- qrenco.de'
+alias weather='curl wttr.in?c'
 
 alias duc="du --max-depth=1 -ha | sort -rh | sed 's/\.\///' | sed /^0/d"
 
@@ -57,3 +56,4 @@ extract () {
          echo "'$1' is not a valid file"
      fi
 }
+
