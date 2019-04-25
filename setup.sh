@@ -67,7 +67,7 @@ get_github_latest_release_file() {
 }
 
 install_tools() {
-  sudo apt install python3-dev python3-pip python3-setuptools -y
+  sudo apt-get install python3-dev python3-pip python3-setuptools jq -y
   sudo pip3 install thefuck yq
 
   git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf || true
@@ -80,7 +80,7 @@ install_tools() {
     wget -P /tmp https://github.com/sharkdp/bat/releases/download/v0.10.0/bat_0.10.0_amd64.deb
     sudo dpkg -i /tmp/bat_0.10.0_amd64.deb
   else
-    echo "can't install up for this arch, fix setup script"
+    echo "can't install 'bat' for this arch, fix setup script"
   fi
 }
 

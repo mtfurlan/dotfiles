@@ -175,3 +175,15 @@ preexec() {
     #echo DISPLAY = $DISPLAY, display.txt = `cat ~/.display.txt`, STY = $STY, TMUX = $TMUX
 }
 trap 'preexec' DEBUG
+
+
+# set terminal title on ssh
+# https://github.com/gnunn1/tilix/issues/577#issuecomment-261271110
+ssh()
+{
+    SSHAPP=$(which ssh)
+    ARGS=$@
+    echo -en "\033]0;ssh $ARGS\007"
+    $SSHAPP $ARGS
+    echo -en "\033]0;$(hostname)\007"
+}

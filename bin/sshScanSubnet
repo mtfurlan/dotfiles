@@ -7,18 +7,9 @@ IFS=$'\n\t'
 # https://github.com/kislyuk/yq
 # pip install yq
 
-XQ=$(which xq)
-AVAHI_RESOLVE_ADDRESS=$(which avahi-resolve-address)
-
-if [ ! -x $XQ ]; then
-    echo "missing yq/xq"
-    exit 1
-fi
-if [ ! -x $AVAHI_RESOLVE_ADDRESS ]; then
-    echo "missing avahi-resolve-address"
-    exit 1
-fi
-
+command -v jq >/dev/null 2>&1 || { echo >&2 "I require jq but it's not installed.  Aborting."; exit 1; }
+command -v xq >/dev/null 2>&1 || { echo >&2 "I require jq but it's not installed.  Aborting."; exit 1; }
+command -v avahi-resolve-address >/dev/null 2>&1 || { echo >&2 "I require jq but it's not installed.  Aborting."; exit 1; }
 
 show_help () {
     echo "Usage: sshScanSubnet {target specification}"
@@ -46,7 +37,7 @@ echo "scanning $subnet"
 
 sudo nmap -Pn -oX - -p22 $subnet > /tmp/nmapOutput
 
-stage2=$(cat /tmp/nmapOutput | $XQ -c '.nmaprun.host[] |  [(.address | if type=="array" then [.[0]."@addr", .[1]."@addr", .[1]."@vendor"] else [."@addr"] end), .ports.port.state."@state"]')
+stage2=$(cat /tmp/nmapOutput | xq -c '.nmaprun.host[] |  [(.address | if type=="array" then [.[0]."@addr", .[1]."@addr", .[1]."@vendor"] else [."@addr"] end), .ports.port.state."@state"]')
 
 #echo -e "$stage2\n\n"
 hosts=$(echo "$stage2" | grep open | sed 's/["\[\]]*//g' | sed 's/,open$//' | sed 's/,/, /g')
@@ -81,5 +72,5 @@ while read line ; do
     ip=$(echo $line | cut -d' ' -f1)
     hostname=$(echo $line | cut -d' ' -f2)
     hosts="${hosts/$ip/$ip, $hostname}"
-done <<< "$($AVAHI_RESOLVE_ADDRESS $(echo "$hosts" | cut -d, -f1) 2>/dev/null)"
+done <<< "$(avahi-resolve-address $(echo "$hosts" | cut -d, -f1) 2>/dev/null)"
 echo "$hosts" | perl -pe 's/^([^,]*),(?=[^,]*,[^,]*$)/\1, ,/' | column -t -s,
