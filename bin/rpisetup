@@ -1,5 +1,5 @@
 #!/bin/bash
-set -u
+set -eu
 
 MOUNT_POINT=/mnt/img
 VERBOSE=1
@@ -173,20 +173,18 @@ fi
 #now we're mounted in memory
 
 SUDO touch $MOUNT_POINT/boot/ssh
-cd $MOUNT_POINT
-SUDO mv home/pi home/mark
-[ -z "$hostname" ] || echo $hostname | SUDO tee $MOUNT_POINT/etc/hostname >/dev/null
-SUDO sed -i 's/pi/mark/g' etc/passwd etc/shadow etc/group
-SUDO sed -i 's/gmarko/gpio/g' etc/passwd etc/shadow etc/group
-SUDO git clone https://github.com/mtfurlan/dotfiles.git $MOUNT_POINT/home/mark/.dotfiles
-SUDO chown -R 1000:1000 home/mark/
-cd ../
 
 
+SUDO git clone https://github.com/mtfurlan/dotfiles.git $MOUNT_POINT/home/pi/.dotfiles
+SUDO chown -R 1000:1000 home/pi/
+
+setup_chroot
 if [ "$rpi_shell" -eq 1 ]; then
-    setup_chroot
     SUDO chroot ${MOUNT_POINT} "bash -i"
 fi
+SUDO chroot ${MOUNT_POINT} "usermod -l mark pi"
+SUDO chroot ${MOUNT_POINT} "usermod -d /home/mark -m mark"
+SUDO chroot ${MOUNT_POINT} "bash -c 'echo \"mark:hunter.2\" | chpasswd'"
 
 
 unmount_all
@@ -197,10 +195,13 @@ fi
 
 
 ## Notes
-# swap drive
+### if headless, lower GPU memory
+# rpisetup -> advanced -> memory split
+### swap off
 # sudo dphys-swapfile swapoff
 # sudo dphys-swapfile uninstall
 # sudo update-rc.d dphys-swapfile remove
+### swap flash drive
 # find uuid at /dev/disk/by-uuid
 # in fstab: UUID=a0345e19-192d-49cf-8402-cc9aacc3c473 none swap sw 0 0
 # sudo swapon -a

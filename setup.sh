@@ -35,7 +35,7 @@ setup_github() {
     [nN][oO]|[nN])
       echo "Alright setup your own key"
       read -n 1 -s -r -p "Press any key to continue"
-      change_dofiles_remote
+      verify_github_remote
       return
       ;;
   esac
@@ -43,9 +43,9 @@ setup_github() {
   cat ~/.ssh/github_rsa.pub
   echo "Add that to github"
   read -n 1 -s -r -p "Press any key to continue"
-  change_dofiles_remote
+  verify_github_remote
 }
-change_dofiles_remote() {
+verify_github_remote() {
   echo ""
   if ssh -T -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no git@github.com 2>&1 | grep "successfully authenticated" ; then
     read -r -p "You going to fix that key? [y/N] " response
@@ -58,12 +58,18 @@ change_dofiles_remote() {
     esac
     return;
   fi
-  if git remote -v | grep https ; then
-    git remote remove origin
-    git remote add origin git@github.com:mtfurlan/dotfiles.git
-  fi
 }
 
+
+if git remote -v | grep https ; then
+  read -r -p "Change github remote to not be https? [y/N] " response
+  case "$response" in
+    [yY][eE][sS]|[yY])
+        git remote remove origin
+        git remote add origin git@github.com:mtfurlan/dotfiles.git
+      ;;
+  esac
+fi
 
 get_github_latest_release_file() {
   curl -s "$1/releases/latest" | sed "s/.*href=\"\(.*\)\">redirected.*/\1\/$2/"
@@ -80,7 +86,7 @@ update_tools() {
       wget -q -O "/tmp/bat_${batVersion}_amd64.deb" "https://github.com/sharkdp/bat/releases/download/v$batVersion/bat_${batVersion}_amd64.deb"
       sudo dpkg -i /tmp/bat_0.10.0_amd64.deb
     else
-      echo "can't install up for this arch, fix setup script"
+      echo "can't install bat for this arch, fix setup script"
     fi
   fi
 
@@ -92,7 +98,7 @@ update_tools() {
 }
 
 install_tools() {
-  sudo apt install python3-dev python3-pip python3-setuptools -y
+  sudo apt-get install python3-dev python3-pip python3-setuptools jq -y
   sudo pip3 install thefuck yq
 
   git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf || true

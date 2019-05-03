@@ -57,3 +57,6 @@ extract () {
      fi
 }
 
+function dsf {
+    git diff --no-index "$@" | diff-so-fancy | less --tabs=4 -RFX
+}
