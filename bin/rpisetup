@@ -14,7 +14,6 @@ mounted=false
 
 cleanup() {
     echo "failed $?"
-    bash -i
     if [ "$mounted" = true ]; then
         unmount_all
     fi
@@ -196,6 +195,8 @@ if [ -d $MOUNT_POINT/home/pi/ ]; then
     SUDO chroot ${MOUNT_POINT} "usermod -d /home/mark -m mark"
 fi
 SUDO chroot ${MOUNT_POINT} bash -c 'echo \"mark:hunter.2\" | chpasswd'
+#set hostname
+SUDO sed -i "s/raspberrypi/$hostname/" $MOUNT_POINT/etc/hosts $MOUNT_POINT/etc/hostname
 
 setup_chroot
 if [ "$rpi_shell" -eq 1 ]; then
