@@ -1,15 +1,25 @@
 #!/bin/bash
-set -eu
+set -eEu
 
 MOUNT_POINT=/mnt/img
 VERBOSE=1
 rpi_shell=0
 sd=""
 hostname=""
+mounted=false
 
 #So this is in progress between what I had and didn't save because I thought
 # it was committed, and things stolen from
 # http://peter.lorenzen.us/linux/headless-raspberry-pi-configuration
+
+cleanup() {
+    echo "failed $?"
+    bash -i
+    if [ "$mounted" = true ]; then
+        unmount_all
+    fi
+}
+trap cleanup EXIT ERR
 
 usage() {
     set +x
@@ -25,8 +35,9 @@ usage() {
 vecho() { [ $VERBOSE -lt 1 ] || echo $* >/dev/stderr; }
 vvecho() { [ $VERBOSE -lt 2 ] || echo $* >/dev/stderr; }
 SUDO() {
-    vecho SUDO $*
-    sudo $*
+    cmd="sudo $@"
+    vecho "$cmd"
+    $($cmd);
 }
 
 dd_somewhere () {
@@ -36,11 +47,12 @@ dd_somewhere () {
         exit 1
     fi
     echo "dding to $dev"
-    SUDO dd if="$zipdir/$imgfile" of=$dev bs=1M status=progress
+    SUDO dd if="$imgfile" of=$dev bs=1M status=progress
 }
 
 
 mount_loop() {
+    mounted=true
     bootStart=$(parted -s "$imgfile" unit B print | awk '/^Number/{p=1;next}; p{gsub(/[^[:digit:]]/, "", $2); print $2}' | head -n1)
     bootSize=$(parted -s "$imgfile" unit B print | awk '/^Number/{p=1;next}; p{gsub(/[^[:digit:]]/, "", $4); print $4}' | head -n1)
     rootStart=$(parted -s "$imgfile" unit B print | awk '/^Number/{p=1;next}; p{gsub(/[^[:digit:]]/, "", $2); print $2}' | head -n2 | tail -n1)
@@ -75,12 +87,11 @@ setup_chroot() {
 unmount_all() {
     [ ! -z "$MOUNT_POINT" ] || return 1
     #[ -z "$keep_mount" ] || return 0
-    for f in proc dev sys;do
+    for f in proc dev sys boot;do
         is_mounted $MOUNT_POINT/$f && SUDO umount $MOUNT_POINT/$f
     done
-    SUDO umount $MOUNT_POINT/boot
-    sleep 1
-    SUDO umount $MOUNT_POINT
+    is_mounted $MOUNT_POINT && SUDO umount $MOUNT_POINT
+    mounted=false
 }
 
 
@@ -166,6 +177,7 @@ if [[ ! -z "$sd" ]]; then echo "writing to sd $sd"; fi
 
 
 #START OF ACTUAL STUFF
+unmount_all
 mount_loop
 if [ -z "${MOUNT_POINT}" -o ! -f "$MOUNT_POINT/etc/rpi-issue" -o ! -f "$MOUNT_POINT/boot/issue.txt" ]; then
     usage raspbian root not as expected
@@ -175,16 +187,20 @@ fi
 SUDO touch $MOUNT_POINT/boot/ssh
 
 
-SUDO git clone https://github.com/mtfurlan/dotfiles.git $MOUNT_POINT/home/pi/.dotfiles
-SUDO chown -R 1000:1000 home/pi/
+if [ -d $MOUNT_POINT/home/pi/ ]; then
+    if [ ! -d $MOUNT_POINT/home/pi/.dotfiles ]; then
+        SUDO git clone https://github.com/mtfurlan/dotfiles.git $MOUNT_POINT/home/pi/.dotfiles
+    fi
+    SUDO chown -R 1000:1000 $MOUNT_POINT/home/pi/
+    SUDO chroot ${MOUNT_POINT} "usermod -l mark pi"
+    SUDO chroot ${MOUNT_POINT} "usermod -d /home/mark -m mark"
+fi
+SUDO chroot ${MOUNT_POINT} bash -c 'echo \"mark:hunter.2\" | chpasswd'
 
 setup_chroot
 if [ "$rpi_shell" -eq 1 ]; then
     SUDO chroot ${MOUNT_POINT} "bash -i"
 fi
-SUDO chroot ${MOUNT_POINT} "usermod -l mark pi"
-SUDO chroot ${MOUNT_POINT} "usermod -d /home/mark -m mark"
-SUDO chroot ${MOUNT_POINT} "bash -c 'echo \"mark:hunter.2\" | chpasswd'"
 
 
 unmount_all
