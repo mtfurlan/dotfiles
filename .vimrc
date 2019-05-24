@@ -14,8 +14,7 @@ Plugin 'tpope/vim-fugitive'
 Plugin 'tpope/vim-markdown'
 Plugin 'Valloric/MatchTagAlways'
 Plugin 'christoomey/vim-tmux-navigator'
-"Plugin 'JamshedVesuna/vim-markdown-preview'
-Plugin 'suan/vim-instant-markdown'
+Plugin 'shime/vim-livedown'
 Plugin 'scrooloose/syntastic'
 Plugin 'scrooloose/nerdtree'
 Plugin 'leafgarland/typescript-vim'
@@ -27,6 +26,7 @@ Plugin 'mileszs/ack.vim'
 Plugin 'AndrewRadev/linediff.vim'
 Plugin 'chrisbra/csv.vim'
 Plugin 'posva/vim-vue'
+Plugin 'google/vim-searchindex'
 
 call vundle#end()
 filetype plugin indent on
@@ -69,10 +69,9 @@ let g:airline#extensions#tabline#enabled = 1
 let g:airline#extensions#tabline#buffer_nr_show = 1
 set hidden
 
-" ===vim-markdown-preview settings===
-let vim_markdown_preview_github=1
-let g:instant_markdown_autostart = 0
-map <C-P> :InstantMarkdownPreview<CR>
+" ===vim markdown preview settings===
+let g:livedown_browser = "chromium"
+map <C-P> :LivedownToggle<CR>
 
 " === Tmuxline ===
 "	\'c'    : '#H',
@@ -146,9 +145,9 @@ let g:vimwiki_folding='expr'
 let g:vimwiki_url_maxsave = 0
 
 " =============== Search ==============
-"if executable('ag')
-"  let g:ackprg = 'ag --vimgrep'
-"endif
+if executable('ag')
+  let g:ackprg = 'ag --vimgrep'
+endif
 cnoreabbrev Ack Ack!
 noremap <Leader>a :Ack! <cword>
 noremap <Leader>s :Ack!<Space>
