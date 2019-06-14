@@ -4,8 +4,11 @@ set -eEu
 MOUNT_POINT=/mnt/img
 verbose=1
 rpi_shell=0
+uart=0
 target=""
 hostname=""
+wifi_ssid=""
+wifi_pass=""
 username="mark"
 mounted=false
 
@@ -24,7 +27,8 @@ vecho() { [ $verbose -lt 1 ] || echo $* >/dev/stderr; }
 vvecho() { [ $verbose -lt 2 ] || echo $* >/dev/stderr; }
 SUDO() {
     cmd="sudo $@"
-    vecho "$cmd"
+    echo "30: '$cmd'"
+
     $($cmd);
 }
 
@@ -94,13 +98,17 @@ help () {
     echo " -h, --host=name          sets hostname on rpi"
     echo " -u, --user=name          sets username on rpi"
     echo " -s, --shell              start shell on raspian"
+    echo "     --uart               enable uart"
+    echo "     --wifi-ssid=ssid     set wifi ssid"
+    echo "     --wifi-pass=pass     set wifi password"
+    echo "                          TODO: wifi doesn't work, wlan0 just doesn't get enabled?"
     echo " -v, --verbose            verbosity, 2 levels"
     echo " -q, --quiet              none verbosity"
     exit
 }
 
 # getopt short options go together, long options have commas
-TEMP=`getopt -o w:h:u:sv --long help,write:,hostname:,user:,shell,verbose -n $0 -- "$@"`
+TEMP=`getopt -o w:h:u:sv --long help,write:,hostname:,user:,shell,verbose,uart,wifi-ssid:,wifi-pass: -n $0 -- "$@"`
 if [ $? != 0 ] ; then
     echo "Something wrong with getopt" >&2
     exit 1
@@ -113,7 +121,10 @@ while true ; do
         --help) help; exit 0; shift ;;
         -h|--hostname) hostname=$2 ; shift 2 ;;
         -u|--user) username=$2 ; shift 2 ;;
+        --wifi-ssid) wifi_ssid=$2 ; shift 2 ;;
+        --wifi-pass) wifi_pass=$2 ; shift 2 ;;
         -s|--shell) rpi_shell=1 ; shift ;;
+        --uart) uart=1 ; shift ;;
         -v|--verbose) ((verbose++)) ; shift ;;
         -w|--write) target=$2 ; shift 2 ;;
         --) shift ; break ;;
@@ -184,21 +195,37 @@ setup_chroot
 if [ -d $MOUNT_POINT/home/pi/ ]; then
     if [ ! -d $MOUNT_POINT/home/pi/.dotfiles ]; then
         SUDO git clone https://github.com/mtfurlan/dotfiles.git $MOUNT_POINT/home/pi/.dotfiles
+        SUDO chown -R 1000:1000 $MOUNT_POINT/home/pi/.dotfiles
     fi
-    SUDO chown -R 1000:1000 $MOUNT_POINT/home/pi/
     SUDO chroot ${MOUNT_POINT} "usermod -l $username pi"
     SUDO chroot ${MOUNT_POINT} "usermod -d /home/$username -m $username"
     SUDO chroot ${MOUNT_POINT} bash -c "echo \"$username:hunter.2\" | chpasswd"
     #set hostname
     SUDO sed -i "s/raspberrypi/$hostname/" $MOUNT_POINT/etc/hosts $MOUNT_POINT/etc/hostname
+
+    if [ "$uart" -eq 1 ]; then
+        sudo tee -a "$MOUNT_POINT/boot/config.txt" >/dev/null <<EOF
+enable_uart=1
+EOF
+    fi
+    if [[ ! -z "$wifi_ssid" ]]; then
+        sudo tee "$MOUNT_POINT/boot/wpa_supplicant.conf" >/dev/null <<EOF
+country=us
+update_config=1
+ctrl_interface=/var/run/wpa_supplicant
+network={
+    ssid="$wifi_ssid"
+    psk="$wifi_pass"
+}
+EOF
+    fi
+
 else
     echo "ASSUMING IMAGE ALREADY CONFIGURED: TODO maybe not that"
-:w
-:w
 fi
 
 if [ "$rpi_shell" -eq 1 ]; then
-    SUDO chroot ${MOUNT_POINT} "bash -i"
+    sudo chroot ${MOUNT_POINT} bash -i
 fi
 
 
