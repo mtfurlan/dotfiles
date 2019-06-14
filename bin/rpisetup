@@ -2,10 +2,11 @@
 set -eEu
 
 MOUNT_POINT=/mnt/img
-VERBOSE=1
+verbose=1
 rpi_shell=0
-sd=""
+target=""
 hostname=""
+username="mark"
 mounted=false
 
 #So this is in progress between what I had and didn't save because I thought
@@ -18,21 +19,9 @@ cleanup() {
         unmount_all
     fi
 }
-trap cleanup EXIT ERR
 
-usage() {
-    set +x
-    [ $# == 0 ] || echo $*
-    echo "usage: rpido <options> zipfile"
-    echo " -w             write raspian to sdcard"
-    echo " -h name    sets /etc/hostname on rpi"
-    echo " -s             start shell on raspian"
-    echo "configures stuff"
-    exit
-}
-
-vecho() { [ $VERBOSE -lt 1 ] || echo $* >/dev/stderr; }
-vvecho() { [ $VERBOSE -lt 2 ] || echo $* >/dev/stderr; }
+vecho() { [ $verbose -lt 1 ] || echo $* >/dev/stderr; }
+vvecho() { [ $verbose -lt 2 ] || echo $* >/dev/stderr; }
 SUDO() {
     cmd="sudo $@"
     vecho "$cmd"
@@ -94,60 +83,66 @@ unmount_all() {
 }
 
 
-PARAMS=""
+help () {
+    #don't echo commands
+    set +x
+    # if arguments, print them
+    [ $# == 0 ] || echo $*
 
-while (( "$#" )); do
+    echo "usage: $0 <options> zipfile"
+    echo " -w, --write=target       write raspian to sdcard"
+    echo " -h, --host=name          sets hostname on rpi"
+    echo " -u, --user=name          sets username on rpi"
+    echo " -s, --shell              start shell on raspian"
+    echo " -v, --verbose            verbosity, 2 levels"
+    echo " -q, --quiet              none verbosity"
+    exit
+}
+
+# getopt short options go together, long options have commas
+TEMP=`getopt -o w:h:u:sv --long help,write:,hostname:,user:,shell,verbose -n $0 -- "$@"`
+if [ $? != 0 ] ; then
+    echo "Something wrong with getopt" >&2
+    exit 1
+fi
+eval set -- "$TEMP"
+
+dir=""
+while true ; do
     case "$1" in
-        -h|--host)
-            hostname=$2
-            shift 2
-            ;;
-        -s|--shell)
-            rpi_shell=1
-            shift 1
-            ;;
-        -v|--verbose)
-            VERBOSE=1
-            shift 1
-            ;;
-        -vv)
-            VERBOSE=2
-            shift 1
-            ;;
-        -q|--quiet)
-            VERBOSE=0
-            shift 1
-            ;;
-        -w|--write)
-            sd=$2
-            shift 2
-            ;;
-        --) # end argument parsing
-            shift
-            break
-            ;;
-        -*|--*=) # unsupported flags
-            echo "Error: Unsupported flag $1" >&2
-            usage
-            exit 1
-            ;;
-        *) # preserve positional arguments
-            PARAMS="$PARAMS $1"
-            shift
-            ;;
+        --help) help; exit 0; shift ;;
+        -h|--hostname) hostname=$2 ; shift 2 ;;
+        -u|--user) username=$2 ; shift 2 ;;
+        -s|--shell) rpi_shell=1 ; shift ;;
+        -v|--verbose) ((verbose++)) ; shift ;;
+        -w|--write) target=$2 ; shift 2 ;;
+        --) shift ; break ;;
+        *) echo "Internal error!" ; exit 1 ;;
     esac
 done
 
-# set positional arguments in their proper place
-eval set -- "$PARAMS"
+#if no source file, help
 if [ $# -eq 0 ]; then
-    usage
+    help
     exit 1;
 fi
-[ $VERBOSE -lt 2 ] || set -x
+
+zipfile=${1:-}
+
+if [[ ! -z "$hostname" ]]; then echo "hostname: $hostname"; fi
+echo "username: $username"
+if [ "$rpi_shell" -eq 1 ]; then echo "launching shell"; fi
+if [[ ! -z "$target" ]]; then echo "writing to target $target"; fi
+echo "verbosity: $verbose"
+echo "sourcefile: $zipfile"
+
+
+# if verbose is 2+, echo all commands
+[ $verbose -lt 2 ] || set -x
+
+# STUFF STARTS HERE
 
 #get zipfile, confirm it exists
-zipfile=${1:-}
 if [[ ! -f "$zipfile" ]]; then
     echo "zipfile/imgfile doesn't exist";
     exit 1
@@ -165,40 +160,43 @@ if [ ${zipfile: -4} == ".zip" ]; then
           exit 1
         fi
     fi
-    echo "$zipfile in $zipdir to $imgfile"
 else
     imgfile=$zipfile
 fi
 
-if [[ ! -z "$hostname" ]]; then echo "hostname: $hostname"; fi
-if [ "$rpi_shell" -eq 1 ]; then echo "launching shell"; fi
-if [[ ! -z "$sd" ]]; then echo "writing to sd $sd"; fi
 
+trap cleanup EXIT ERR
 
 #START OF ACTUAL STUFF
 unmount_all
 mount_loop
 if [ -z "${MOUNT_POINT}" -o ! -f "$MOUNT_POINT/etc/rpi-issue" -o ! -f "$MOUNT_POINT/boot/issue.txt" ]; then
-    usage raspbian root not as expected
+    help raspbian root not as expected
 fi
 #now we're mounted in memory
 
 SUDO touch $MOUNT_POINT/boot/ssh
 
+setup_chroot
+#now we can run commands with chroot and exepct them to work
 
+#assume that if the /home/pi directory doesn't exist, all setup is done.
 if [ -d $MOUNT_POINT/home/pi/ ]; then
     if [ ! -d $MOUNT_POINT/home/pi/.dotfiles ]; then
         SUDO git clone https://github.com/mtfurlan/dotfiles.git $MOUNT_POINT/home/pi/.dotfiles
     fi
     SUDO chown -R 1000:1000 $MOUNT_POINT/home/pi/
-    SUDO chroot ${MOUNT_POINT} "usermod -l mark pi"
-    SUDO chroot ${MOUNT_POINT} "usermod -d /home/mark -m mark"
+    SUDO chroot ${MOUNT_POINT} "usermod -l $username pi"
+    SUDO chroot ${MOUNT_POINT} "usermod -d /home/$username -m $username"
+    SUDO chroot ${MOUNT_POINT} bash -c "echo \"$username:hunter.2\" | chpasswd"
+    #set hostname
+    SUDO sed -i "s/raspberrypi/$hostname/" $MOUNT_POINT/etc/hosts $MOUNT_POINT/etc/hostname
+else
+    echo "ASSUMING IMAGE ALREADY CONFIGURED: TODO maybe not that"
+:w
+:w
 fi
-SUDO chroot ${MOUNT_POINT} bash -c 'echo \"mark:hunter.2\" | chpasswd'
-#set hostname
-SUDO sed -i "s/raspberrypi/$hostname/" $MOUNT_POINT/etc/hosts $MOUNT_POINT/etc/hostname
 
-setup_chroot
 if [ "$rpi_shell" -eq 1 ]; then
     SUDO chroot ${MOUNT_POINT} "bash -i"
 fi
@@ -206,8 +204,8 @@ fi
 
 unmount_all
 
-if [[ ! -z "$sd" ]]; then
-    dd_somewhere $sd
+if [[ ! -z "$target" ]]; then
+    dd_somewhere $target
 fi
 
 
