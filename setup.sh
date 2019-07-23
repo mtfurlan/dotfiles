@@ -71,20 +71,23 @@ if git remote -v | grep https ; then
   esac
 fi
 
+get_github_latest_release() {
+  curl -s "$1/releases/latest" | sed 's/.*href=".*tag.\(.*\)">redirected.*/\1/'
+}
 get_github_latest_release_file() {
-  curl -s "$1/releases/latest" | sed "s/.*href=\"\(.*\)\">redirected.*/\1\/$2/"
+  echo "$1/releases/download/$(get_github_latest_release $1)/$2"
 }
 
 update_tools() {
 
   batVersion=$(curl -s https://github.com/sharkdp/bat/releases/latest | sed 's/.*releases\/tag\/v\([0-9.]*\)">redirected.*/\1/')
   batInstalledVersion=$(dpkg -s bat 2>/dev/null | grep Version | sed 's/Version: //') || true
-  echo "bat version: $batVersion, installedVersion: $batInstalledVersion"
 
   if [ "$batInstalledVersion" != "$batVersion" ]; then
+    echo "VERSION MISMATCH: bat version: $batVersion, installedVersion: $batInstalledVersion"
     if [ "$(uname -m)" == "x86_64" ]; then
       wget -q -O "/tmp/bat_${batVersion}_amd64.deb" "https://github.com/sharkdp/bat/releases/download/v$batVersion/bat_${batVersion}_amd64.deb"
-      sudo dpkg -i /tmp/bat_0.10.0_amd64.deb
+      sudo dpkg -i "/tmp/bat_${batVersion}_amd64.deb"
     else
       echo "can't install bat for this arch, fix setup script"
     fi
@@ -95,6 +98,9 @@ update_tools() {
   popd
 
   wget -q -O ~/.local/bin/up $(get_github_latest_release_file https://github.com/akavel/up up)
+  chmod +x ~/.local/bin/up
+  wget -q -O ~/.local/bin/diff-so-fancy https://raw.githubusercontent.com/so-fancy/diff-so-fancy/master/third_party/build_fatpack/diff-so-fancy
+  chmod +x ~/.local/bin/diff-so-fancy
 }
 
 install_tools() {
@@ -144,4 +150,3 @@ if [ "$update" = true ]; then
 else
   setup
 fi
-
