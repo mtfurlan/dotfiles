@@ -11,6 +11,8 @@ command -v jq >/dev/null 2>&1 || { echo >&2 "I require jq but it's not installed
 command -v xq >/dev/null 2>&1 || { echo >&2 "I require jq but it's not installed.  Aborting."; exit 1; }
 command -v avahi-resolve-address >/dev/null 2>&1 || { echo >&2 "I require jq but it's not installed.  Aborting."; exit 1; }
 
+port=22
+
 show_help () {
     echo "Usage: sshScanSubnet {target specification}"
     echo "    target specification: whatever is valid for nmap"
@@ -35,7 +37,7 @@ fi
 
 echo "scanning $subnet"
 
-sudo nmap -Pn -oX - -p22 $subnet > /tmp/nmapOutput
+sudo nmap -Pn -oX - -p$port $subnet > /tmp/nmapOutput
 
 stage2=$(cat /tmp/nmapOutput | xq -c '.nmaprun.host[] |  [(.address | if type=="array" then [.[0]."@addr", .[1]."@addr", .[1]."@vendor"] else [."@addr"] end), .ports.port.state."@state"]')
 
