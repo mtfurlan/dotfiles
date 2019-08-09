@@ -97,6 +97,7 @@ update_tools() {
   git pull
   popd
 
+  mkdir -p ~/.local/bin
   wget -q -O ~/.local/bin/up $(get_github_latest_release_file https://github.com/akavel/up up)
   chmod +x ~/.local/bin/up
   wget -q -O ~/.local/bin/diff-so-fancy https://raw.githubusercontent.com/so-fancy/diff-so-fancy/master/third_party/build_fatpack/diff-so-fancy
@@ -119,7 +120,7 @@ setup() {
 
   if [ -x "$(which apt-get)" ] ; then
     sudo apt-get update
-    sudo apt-get install vim-nox tmux git sl silversearcher-ag curl tree
+    sudo apt-get install vim-nox tmux git sl silversearcher-ag curl tree bash-completion
   else
     echo "apt-get not installed, fix setup.sh for this platform"
   fi
