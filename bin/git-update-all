@@ -18,13 +18,14 @@ White='\033[0;37m'        # White
 excludes=("$HOME/mediawiki" "$HOME/." "$HOME/eudyptula/system/linux")
 
 function locateAllRepos {
+    #so we want IFS to be newline for the loop bit, but space to parse excludes
+    IFS=$' '
     locate "$HOME/**/.git" -0 | grep -zFv ${excludes[@]/#/-e } | sed 's/\.git$//' -z | xargs --null -I {} realpath --relative-to="$HOME" {} | sed 's/^/.\//'
-    #so we want IFS to be newline for the loop bit, but default for above
-    IFS=$'\n'
 }
 
+IFS=$'\n'
 for repo in $(locateAllRepos); do
-    echo -ne "$Purple$repo$Reset: "
+    echo -ne "$Purple$repo$Reset: \n"
     pushd "$HOME/$repo" >/dev/null
     updates=$(git fetch --all 2>&1 | grep '\->' || true)
     git status -b --porcelain | sed 's/^## \(.\+\)/(\1)/; s/^\([? ]\)/    \1/g'
