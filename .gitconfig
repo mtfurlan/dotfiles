@@ -5,6 +5,10 @@
 	editor = vim
 	excludesfile = ~/.gitglobalignore
 
+
+[includeIf "gitdir:~/tome/"]
+	path = ~/tome/.gitconfig
+
 [color]
 	ui = true
 [push]

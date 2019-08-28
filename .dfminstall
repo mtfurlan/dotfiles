@@ -2,6 +2,7 @@
 .ssh/config chmod 0600
 .vim recurse
 .vim/bundle recurse
+tome recurse
 setup.sh exec
 setup.sh skip
 README.md skip
