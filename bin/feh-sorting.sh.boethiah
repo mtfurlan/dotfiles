@@ -1,0 +1,61 @@
+#!/bin/bash
+# alias imgSort="feh --action1 \;\"image-metadata.sh edit-comment %F\" --action2 \;\"image-metadata.sh edit-tags %F\" --info \"image-metadata.sh show %F\" -g 800x600 --fong yudit/15 "
+# feh --action1 \;"image-metadata.sh edit-comment %F" --action2 \;"image-metadata.sh edit-tags %F" --info "image-metadata.sh show %F" -g 800x600 --fong yudit/15
+
+# sudo apt-get install feh exiv2
+if [ $# -lt 2 ]; then
+    echo -e usage: "$0 <action> <filename>\n actions: edit-comment, edit-tags"
+    exit -1
+fi
+
+action=$1
+file=$2
+
+if [ "$action" == "edit-comment" ]; then
+    commentText=$(echo | dmenu)
+    if [ $? -ne 1 ] # not aborted
+    then
+    if [ -z "$commentText" ]; then
+        exiv2 -M"del Exif.Photo.UserComment" $file
+    else
+        exiv2 -M"set Exif.Photo.UserComment $commentText" $file
+    fi
+    fi
+fi
+
+if [ "$action" == "edit-tags" ]; then
+    exiv2 -Pt -g Iptc.Application2.Keywords $file > /tmp/._image_keywords.txt
+
+    selection=$(exiv2 -Pt -g Iptc.Application2.Keywords $file | dmenu -l 10)
+    if [ -n "$selection" ]; then
+        exiv2 -M "del Iptc.Application2.Keywords" $file
+        while read keyword; do
+            if [ "$selection" != "$keyword" ]; then
+                exiv2 -M "add Iptc.Application2.Keywords String $keyword" $file
+            else
+                deleted=true
+            fi
+        done < /tmp/._image_keywords.txt
+
+        if [ -z $deleted ]; then
+            exiv2 -M "add Iptc.Application2.Keywords String $selection" $file
+        fi
+    fi
+    rm /tmp/._image_keywords.txt
+fi
+if [ "$action" == "show" ]; then
+    date=$(exiv2 -Pt -g Exif.Image.DateTime $file)
+    comment=$(exiv2 -Pt -g Exif.Photo.UserComment $file)
+    exiv2 -Pt -g Iptc.Application2.Keywords $file > /tmp/._image_keywords.txt
+    echo -n "$date || Comment: $comment, Keywords: "
+    first=true
+    while read keyword; do
+        if [ $first == "false" ]; then
+            echo -n ", "
+        fi
+        echo -n $keyword
+        first="false"
+    done < /tmp/._image_keywords.txt
+    echo
+    rm /tmp/._image_keywords.txt
+fi
