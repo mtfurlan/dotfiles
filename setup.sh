@@ -4,24 +4,29 @@ cd $(dirname "$0")
 
 help() {
   echo "install stuff, setup github keys, download random tools"
-  echo "       -u, --update"
-  echo "                only update local tools, don't run full setup"
+  echo "       -a, --all"
+  echo "                run full script"
+  echo "       -t, --tools"
+  echo "                only update local tools, don't run full setup; will auto-install tools if used with -a"
   echo "       -h, --help"
   echo "                display this help"
 }
 
+
 # getopt short options go together, long options have commas
-TEMP=`getopt -o uh --long update,help -n 'test.sh' -- "$@"`
+TEMP=`getopt -o tah --long a,tools,help -n 'test.sh' -- "$@"`
 if [ $? != 0 ] ; then
     echo "Something wrong with getopt" >&2
     exit 1
 fi
 eval set -- "$TEMP"
 
-update=false
+tools=false
+all=false
 while true ; do
     case "$1" in
-        -u|--update) update=true ; shift ;;
+        -t|--tools) tools=true ; shift ;;
+        -a|--all) all=true ; shift ;;
         -h|--help) help ; exit 0 ;;
         --) shift ; break ;;
         *) echo "Internal error!" ; exit 1 ;;
@@ -35,6 +40,7 @@ setup_github() {
     [nN][oO]|[nN])
       echo "Alright setup your own key"
       read -n 1 -s -r -p "Press any key to continue"
+      echo ""
       verify_github_remote
       return
       ;;
@@ -43,10 +49,11 @@ setup_github() {
   cat ~/.ssh/github_rsa.pub
   echo "Add that to github"
   read -n 1 -s -r -p "Press any key to continue"
+  echo ""
   verify_github_remote
 }
+
 verify_github_remote() {
-  echo ""
   if ssh -T -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no git@github.com 2>&1 | grep "successfully authenticated" ; then
     read -r -p "You going to fix that key? [y/N] " response
     case "$response" in
@@ -61,15 +68,18 @@ verify_github_remote() {
 }
 
 
-if git remote -v | grep https ; then
-  read -r -p "Change github remote to not be https? [y/N] " response
-  case "$response" in
-    [yY][eE][sS]|[yY])
-        git remote remove origin
-        git remote add origin git@github.com:mtfurlan/dotfiles.git
-      ;;
-  esac
-fi
+
+change_dofiles_remote() {
+  if git remote -v | grep https ; then
+    read -r -p "Change github remote to not be https? [y/N] " response
+    case "$response" in
+      [yY][eE][sS]|[yY])
+          git remote remove origin
+          git remote add origin git@github.com:mtfurlan/dotfiles.git
+        ;;
+    esac
+  fi
+}
 
 get_github_latest_release() {
   curl -s "$1/releases/latest" | sed 's/.*href=".*tag.\(.*\)">redirected.*/\1/'
@@ -123,15 +133,24 @@ install_tools() {
 }
 
 
-setup() {
-  echo "trying to install things"
+new_computer() {
+  echo "updating and installing things from apt"
 
   if [ -x "$(which apt-get)" ] ; then
+    if ! grep --quiet non-free /etc/apt/sources.list; then
+      echo "/etc/apt/sources.list doesn't have nonfree"
+      echo "exit when you're happy"
+      bash --rcfile <(echo "PS1='subshell > '") -i
+    fi
     sudo apt-get update
-    sudo apt-get install vim-nox tmux git sl silversearcher-ag curl tree bash-completion
+    sudo apt-get install vim-nox tmux git sl silversearcher-ag curl tree bash-completion rcm rename
   else
     echo "apt-get not installed, fix setup.sh for this platform"
   fi
+}
+
+# checks for ~/.ssh_github_rsa, and will change the dotfile remote to be git not https
+check_github() {
   if [ ! -f ~/.ssh/github_rsa ]; then
     read -r -p "Setup github keys? [y/N] " response
     case "$response" in
@@ -139,23 +158,69 @@ setup() {
         setup_github
         ;;
     esac
+  else
+    verify_github_remote
   fi
+}
 
+ask_install_tools() {
   read -r -p "install random tools(thefuck, yq, fzf, up)? [y/N] " response
   case "$response" in
     [yY][eE][sS]|[yY])
       install_tools
       ;;
   esac
+}
+
+
+
+## execution starts here
+if [ "$all" = true ]; then
+  new_computer
+
+  echo "making symlinks with rcup from rcm"
+  # use rcm, do a dry run
+  # so this is overly complex, but whatever.
+  # I want to do things like symlink parts of the .vim dir, but not all parts, link the bin dir but without a dot, and exclude setup.sh and README
+
+  # vim dir intended symlinks:
+  #   /home/mark/.vim/bundle/Vundle.vim:/home/mark/.dotfiles/vim/bundle/Vundle.vim
+  #   /home/mark/.vim/filetype.vim:/home/mark/.dotfiles/vim/filetype.vim
+  #   /home/mark/.vim/ftdetect:/home/mark/.dotfiles/vim/ftdetect
+  #   /home/mark/.vim/ftplugin:/home/mark/.dotfiles/vim/ftplugin
+  #   /home/mark/.vim/spell:/home/mark/.dotfiles/vim/spell
+  #   /home/mark/.vim/syntax:/home/mark/.dotfiles/vim/syntax
+  # I want to only link Vundle, so all other plugins aren't in version control.
+  # Should probably update vundle someday.
+  # Everything else, like spelling and extra filetype plugins I want in version control
+
+  # this probably assumes it's in the ~/.dotfiles dir
+
+  SYMLINK_DIRS="vim/bundle/Vundle.vim $(find vim -maxdepth 1 -type d | grep -v bundle | tail -n +2) bin" lsrc -U bin -x setup.sh -x README.md
+  read -r -p "that look good? [Y/n] " response
+  case "$response" in
+    [yY][eE][sS]|[yY]|"")
+      ;; # don't exit, script continues
+    *)
+      echo "good luck, bye"
+      exit 1;;
+  esac
+  SYMLINK_DIRS="vim/bundle/Vundle.vim $(find vim -maxdepth 1 -type d | grep -v bundle | tail -n +2) bin" rcup -v -U bin -x setup.sh -x README.md
+
+  check_github
+  if [ "$tools" = true ]; then
+    install_tools
+  else
+    ask_install_tools
+  fi
 
   echo "if it's a thinkpad, do battery management setup"
   echo "    tpacpi-bat: https://github.com/teleshoes/tpacpi-bat"
   echo "    TODO: https://github.com/morgwai/tpbat-utils-acpi"
-}
 
-
-if [ "$update" = true ]; then
+elif [ "$tools" = true ]; then
   update_tools
 else
-  setup
+  help
+  exit 1
 fi
