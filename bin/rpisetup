@@ -209,6 +209,7 @@ enable_uart=1
 EOF
     fi
     if [[ ! -z "$wifi_ssid" ]]; then
+        echo "NOTICE: wifi doesn't work"
         sudo tee "$MOUNT_POINT/boot/wpa_supplicant.conf" >/dev/null <<EOF
 country=us
 update_config=1
