@@ -3,6 +3,7 @@ set -euo pipefail
 cd $(dirname "$0")
 
 help() {
+  echo "Usage: $0 [OPTION]"
   echo "install stuff, setup github keys, download random tools"
   echo "       -a, --all"
   echo "                run full script"
@@ -10,6 +11,9 @@ help() {
   echo "                only update local tools, don't run full setup; will auto-install tools if used with -a"
   echo "       -h, --help"
   echo "                display this help"
+  echo "expected usage: "
+  echo "       for first time: '$0 -at'"
+  echo "       for updating managed tools: '$0 -t'"
 }
 
 
