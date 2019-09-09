@@ -12,9 +12,8 @@ wifi_pass=""
 username="mark"
 mounted=false
 
-#So this is in progress between what I had and didn't save because I thought
-# it was committed, and things stolen from
-# http://peter.lorenzen.us/linux/headless-raspberry-pi-configuration
+# Expects things like gcc-arm-linux-gnueabihf to be installed
+# TODO: full list
 
 cleanup() {
     echo "failed $?"
