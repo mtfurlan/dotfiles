@@ -45,10 +45,10 @@ dd_somewhere () {
 
 mount_loop() {
     mounted=true
-    bootStart=$(parted -s "$imgfile" unit B print | awk '/^Number/{p=1;next}; p{gsub(/[^[:digit:]]/, "", $2); print $2}' | head -n1)
-    bootSize=$(parted -s "$imgfile" unit B print | awk '/^Number/{p=1;next}; p{gsub(/[^[:digit:]]/, "", $4); print $4}' | head -n1)
-    rootStart=$(parted -s "$imgfile" unit B print | awk '/^Number/{p=1;next}; p{gsub(/[^[:digit:]]/, "", $2); print $2}' | head -n2 | tail -n1)
-    rootSize=$(parted -s "$imgfile" unit B print | awk '/^Number/{p=1;next}; p{gsub(/[^[:digit:]]/, "", $4); print $4}' | head -n2 | tail -n1)
+    bootStart=$(parted -s "$imgfile" unit B print 2>/dev/null | awk '/^Number/{p=1;next}; p{gsub(/[^[:digit:]]/, "", $2); print $2}' | head -n1)
+    bootSize=$(parted -s "$imgfile" unit B print 2>/dev/null | awk '/^Number/{p=1;next}; p{gsub(/[^[:digit:]]/, "", $4); print $4}' | head -n1)
+    rootStart=$(parted -s "$imgfile" unit B print 2>/dev/null | awk '/^Number/{p=1;next}; p{gsub(/[^[:digit:]]/, "", $2); print $2}' | head -n2 | tail -n1)
+    rootSize=$(parted -s "$imgfile" unit B print 2>/dev/null | awk '/^Number/{p=1;next}; p{gsub(/[^[:digit:]]/, "", $4); print $4}' | head -n2 | tail -n1)
     #parted -s "$imgfile" unit B print
     #echo "bootStart: $bootStart"
     #echo "bootSize: $bootSize"
@@ -56,6 +56,7 @@ mount_loop() {
     #echo "rootSize: $rootSize"
     #exit 50
 
+    echo "mounting"
     SUDO mount -o loop,offset="$rootStart",sizelimit="$rootSize" "$imgfile" $MOUNT_POINT
     SUDO mount -o loop,offset="$bootStart",sizelimit="$bootSize" "$imgfile" $MOUNT_POINT/boot
 }
@@ -158,6 +159,10 @@ if [[ ! -f "$zipfile" ]]; then
     echo "zipfile/imgfile doesn't exist";
     exit 1
 fi
+
+#TODO: check if latest
+# This will get the latest release
+# curl http://downloads.raspberrypi.org/rss.xml | xq '[.rss.channel.item[] | select(.title | contains("raspbian_lite"))] | .[-1]'
 
 zipdir=$(dirname $(realpath "${zipfile}"))
 
