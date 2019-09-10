@@ -9,8 +9,10 @@ help() {
   echo "                new computer"
   echo "       -s, --symlink"
   echo "                symlink rc files"
-  echo "       -t, --tools"
-  echo "                only update local tools, don't run full setup; will auto-install tools if used with -a"
+  echo "           --install-tools"
+  echo "                install tools; "
+  echo "           --update-tools; will auto-install tools if used with -n"
+  echo "                only update local tools, don't run full setup"
   echo "       -g, --checkGithub"
   echo "                check/setup github_rsa"
   echo "       -h, --help"
@@ -22,7 +24,7 @@ help() {
 
 
 # getopt short options go together, long options have commas
-TEMP=`getopt -o nstgh --long new,symlink,tools,checkGithub,help -n 'test.sh' -- "$@"`
+TEMP=`getopt -o nsgh --long new,symlink,update-tools,install-tools,checkGithub,help -n 'test.sh' -- "$@"`
 if [ $? != 0 ] ; then
     echo "Something wrong with getopt" >&2
     exit 1
@@ -31,13 +33,15 @@ eval set -- "$TEMP"
 
 new=false
 symlink=false
-tools=false
+updateTools=false
+installTools=false
 checkGithub=false
 while true ; do
     case "$1" in
         -n|--new) new=true ; shift ;;
         -s|--symlink) symlink=true ; shift ;;
-        -t|--tools) tools=true ; shift ;;
+        --update-tools) updateTools=true ; shift ;;
+        --install-tools) installTools=true ; shift ;;
         -g|--checkGithub) checkGithub=true ; shift ;;
         -h|--help) help ; exit 0 ;;
         --) shift ; break ;;
@@ -223,8 +227,9 @@ if [ "$new" = true ]; then
   symlink=true
   checkGithub=true
 
-  if [ "$tools" = true ]; then
+  if [ "$installTools" = true ]; then
     install_tools
+    installTools=false
   else
     ask_install_tools
   fi
@@ -235,7 +240,10 @@ if [ "$new" = true ]; then
 
 fi
 
-if [ "$tools" = true ]; then
+if [ "$installTools" = true ]; then
+  install_tools
+fi
+if [ "$updateTools" = true ]; then
   update_tools
 fi
 if [ "$symlink" = true ]; then
