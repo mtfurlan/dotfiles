@@ -5,10 +5,14 @@ cd $(dirname "$0")
 help() {
   echo "Usage: $0 [OPTION]"
   echo "install stuff, setup github keys, download random tools"
-  echo "       -a, --all"
-  echo "                run full script"
+  echo "       -n, --new"
+  echo "                new computer"
+  echo "       -s, --symlink"
+  echo "                symlink rc files"
   echo "       -t, --tools"
   echo "                only update local tools, don't run full setup; will auto-install tools if used with -a"
+  echo "       -g, --checkGithub"
+  echo "                check/setup github_rsa"
   echo "       -h, --help"
   echo "                display this help"
   echo "expected usage: "
@@ -18,22 +22,26 @@ help() {
 
 
 # getopt short options go together, long options have commas
-TEMP=`getopt -o tah --long a,tools,help -n 'test.sh' -- "$@"`
+TEMP=`getopt -o nstgh --long new,symlink,tools,checkGithub,help -n 'test.sh' -- "$@"`
 if [ $? != 0 ] ; then
     echo "Something wrong with getopt" >&2
     exit 1
 fi
 eval set -- "$TEMP"
 
+new=false
+symlink=false
 tools=false
-all=false
+checkGithub=false
 while true ; do
     case "$1" in
+        -n|--new) new=true ; shift ;;
+        -s|--symlink) symlink=true ; shift ;;
         -t|--tools) tools=true ; shift ;;
-        -a|--all) all=true ; shift ;;
+        -g|--checkGithub) checkGithub=true ; shift ;;
         -h|--help) help ; exit 0 ;;
         --) shift ; break ;;
-        *) echo "Internal error!" ; exit 1 ;;
+        *) echo "bad arg $1" ; exit 1 ;;
     esac
 done
 
@@ -176,12 +184,7 @@ ask_install_tools() {
   esac
 }
 
-
-
-## execution starts here
-if [ "$all" = true ]; then
-  new_computer
-
+symlinks() {
   echo "making symlinks with rcup from rcm"
   # use rcm, do a dry run
   # so this is overly complex, but whatever.
@@ -210,8 +213,16 @@ if [ "$all" = true ]; then
       exit 1;;
   esac
   SYMLINK_DIRS="vim/bundle/Vundle.vim $(find vim -maxdepth 1 -type d | grep -v bundle | tail -n +2) bin" rcup -v -U bin -x setup.sh -x README.md
+}
 
-  check_github
+## execution starts here
+if [ "$new" = true ]; then
+  echo "new computer"
+  new_computer
+
+  symlink=true
+  checkGithub=true
+
   if [ "$tools" = true ]; then
     install_tools
   else
@@ -222,9 +233,14 @@ if [ "$all" = true ]; then
   echo "    tpacpi-bat: https://github.com/teleshoes/tpacpi-bat"
   echo "    TODO: https://github.com/morgwai/tpbat-utils-acpi"
 
-elif [ "$tools" = true ]; then
+fi
+
+if [ "$tools" = true ]; then
   update_tools
-else
-  help
-  exit 1
+fi
+if [ "$symlink" = true ]; then
+  symlinks
+fi
+if [ "$checkGithub" = true ]; then
+  check_github
 fi
