@@ -6,6 +6,8 @@ Random tools
 * https://github.com/junegunn/fzf
 * https://github.com/akavel/up
 * https://github.com/nvbn/thefuck
+* https://github.com/bcicen/slackcat
+
 Thinkpad-specific
 * https://github.com/teleshoes/tpacpi-bat
 * https://github.com/morgwai/tpbat-utils-acpi
