@@ -1,6 +1,8 @@
 #!/bin/bash
 set -eEu
 
+# apt install qem-user-static qemu-system-arm
+
 MOUNT_POINT=/mnt/img
 verbose=1
 rpi_shell=0
@@ -12,9 +14,6 @@ wifi_pass=""
 username="mark"
 mounted=false
 
-#So this is in progress between what I had and didn't save because I thought
-# it was committed, and things stolen from
-# http://peter.lorenzen.us/linux/headless-raspberry-pi-configuration
 
 cleanup() {
     echo "failed $?"
@@ -45,10 +44,10 @@ dd_somewhere () {
 
 mount_loop() {
     mounted=true
-    bootStart=$(parted -s "$imgfile" unit B print | awk '/^Number/{p=1;next}; p{gsub(/[^[:digit:]]/, "", $2); print $2}' | head -n1)
-    bootSize=$(parted -s "$imgfile" unit B print | awk '/^Number/{p=1;next}; p{gsub(/[^[:digit:]]/, "", $4); print $4}' | head -n1)
-    rootStart=$(parted -s "$imgfile" unit B print | awk '/^Number/{p=1;next}; p{gsub(/[^[:digit:]]/, "", $2); print $2}' | head -n2 | tail -n1)
-    rootSize=$(parted -s "$imgfile" unit B print | awk '/^Number/{p=1;next}; p{gsub(/[^[:digit:]]/, "", $4); print $4}' | head -n2 | tail -n1)
+    bootStart=$(parted -s "$imgfile" unit B print 2>/dev/null | awk '/^Number/{p=1;next}; p{gsub(/[^[:digit:]]/, "", $2); print $2}' | head -n1)
+    bootSize=$(parted -s "$imgfile" unit B print 2>/dev/null | awk '/^Number/{p=1;next}; p{gsub(/[^[:digit:]]/, "", $4); print $4}' | head -n1)
+    rootStart=$(parted -s "$imgfile" unit B print 2>/dev/null | awk '/^Number/{p=1;next}; p{gsub(/[^[:digit:]]/, "", $2); print $2}' | head -n2 | tail -n1)
+    rootSize=$(parted -s "$imgfile" unit B print 2>/dev/null | awk '/^Number/{p=1;next}; p{gsub(/[^[:digit:]]/, "", $4); print $4}' | head -n2 | tail -n1)
     #parted -s "$imgfile" unit B print
     #echo "bootStart: $bootStart"
     #echo "bootSize: $bootSize"
@@ -56,6 +55,22 @@ mount_loop() {
     #echo "rootSize: $rootSize"
     #exit 50
 
+    # check if things end in "B" because parted does that sometimes and mount doesn't like it
+    if [[ "$bootStart" =~ [^0-9] ]]; then
+        #some non-numerics
+        if [[ "$bootStart" =~ [0-9]B$ ]]; then
+            #strip B off all sizes
+            bootStart=${bootStart::-1}
+            bootSize=${bootSize::-1}
+            rootStart=${rootStart::-1}
+            rootSize=${rootSize::-1}
+        else
+            echo "boot start invalid: '$bootStart'"
+        fi
+    fi
+
+
+    echo "mounting"
     SUDO mount -o loop,offset="$rootStart",sizelimit="$rootSize" "$imgfile" $MOUNT_POINT
     SUDO mount -o loop,offset="$bootStart",sizelimit="$bootSize" "$imgfile" $MOUNT_POINT/boot
 }
@@ -158,6 +173,10 @@ if [[ ! -f "$zipfile" ]]; then
     echo "zipfile/imgfile doesn't exist";
     exit 1
 fi
+
+#TODO: check if latest
+# This will get the latest release
+# curl http://downloads.raspberrypi.org/rss.xml | xq '[.rss.channel.item[] | select(.title | contains("raspbian_lite"))] | .[-1]'
 
 zipdir=$(dirname $(realpath "${zipfile}"))
 
