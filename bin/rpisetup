@@ -1,6 +1,8 @@
 #!/bin/bash
 set -eEu
 
+# apt install qem-user-static qemu-system-arm
+
 MOUNT_POINT=/mnt/img
 verbose=1
 rpi_shell=0
@@ -12,8 +14,6 @@ wifi_pass=""
 username="mark"
 mounted=false
 
-# Expects things like gcc-arm-linux-gnueabihf to be installed
-# TODO: full list
 
 cleanup() {
     echo "failed $?"
@@ -54,6 +54,21 @@ mount_loop() {
     #echo "rootStart: $rootStart"
     #echo "rootSize: $rootSize"
     #exit 50
+
+    # check if things end in "B" because parted does that sometimes and mount doesn't like it
+    if [[ "$bootStart" =~ [^0-9] ]]; then
+        #some non-numerics
+        if [[ "$bootStart" =~ [0-9]B$ ]]; then
+            #strip B off all sizes
+            bootStart=${bootStart::-1}
+            bootSize=${bootSize::-1}
+            rootStart=${rootStart::-1}
+            rootSize=${rootSize::-1}
+        else
+            echo "boot start invalid: '$bootStart'"
+        fi
+    fi
+
 
     echo "mounting"
     SUDO mount -o loop,offset="$rootStart",sizelimit="$rootSize" "$imgfile" $MOUNT_POINT
