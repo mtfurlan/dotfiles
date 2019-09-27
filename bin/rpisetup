@@ -14,94 +14,6 @@ wifi_pass=""
 username="mark"
 mounted=false
 
-
-cleanup() {
-    echo "failed $?"
-    if [ "$mounted" = true ]; then
-        unmount_all
-    fi
-}
-
-vecho() { [ $verbose -lt 1 ] || echo $* >/dev/stderr; }
-vvecho() { [ $verbose -lt 2 ] || echo $* >/dev/stderr; }
-SUDO() {
-    cmd="sudo $@"
-    echo "30: '$cmd'"
-
-    $($cmd);
-}
-
-dd_somewhere () {
-    dev=$1
-    if [ ! -e "$dev" ]; then
-        echo "$dev doesn't exist"
-        exit 1
-    fi
-    echo "dding to $dev"
-    SUDO dd if="$imgfile" of=$dev bs=1M status=progress
-}
-
-
-mount_loop() {
-    mounted=true
-    bootStart=$(parted -s "$imgfile" unit B print 2>/dev/null | awk '/^Number/{p=1;next}; p{gsub(/[^[:digit:]]/, "", $2); print $2}' | head -n1)
-    bootSize=$(parted -s "$imgfile" unit B print 2>/dev/null | awk '/^Number/{p=1;next}; p{gsub(/[^[:digit:]]/, "", $4); print $4}' | head -n1)
-    rootStart=$(parted -s "$imgfile" unit B print 2>/dev/null | awk '/^Number/{p=1;next}; p{gsub(/[^[:digit:]]/, "", $2); print $2}' | head -n2 | tail -n1)
-    rootSize=$(parted -s "$imgfile" unit B print 2>/dev/null | awk '/^Number/{p=1;next}; p{gsub(/[^[:digit:]]/, "", $4); print $4}' | head -n2 | tail -n1)
-    #parted -s "$imgfile" unit B print
-    #echo "bootStart: $bootStart"
-    #echo "bootSize: $bootSize"
-    #echo "rootStart: $rootStart"
-    #echo "rootSize: $rootSize"
-    #exit 50
-
-    # check if things end in "B" because parted does that sometimes and mount doesn't like it
-    if [[ "$bootStart" =~ [^0-9] ]]; then
-        #some non-numerics
-        if [[ "$bootStart" =~ [0-9]B$ ]]; then
-            #strip B off all sizes
-            bootStart=${bootStart::-1}
-            bootSize=${bootSize::-1}
-            rootStart=${rootStart::-1}
-            rootSize=${rootSize::-1}
-        else
-            echo "boot start invalid: '$bootStart'"
-        fi
-    fi
-
-
-    echo "mounting"
-    SUDO mount -o loop,offset="$rootStart",sizelimit="$rootSize" "$imgfile" $MOUNT_POINT
-    SUDO mount -o loop,offset="$bootStart",sizelimit="$bootSize" "$imgfile" $MOUNT_POINT/boot
-}
-
-is_mounted() {
-    mount | grep $(realpath $1) >/dev/null
-}
-
-setup_chroot() {
-    if [[ ! -f /usr/bin/qemu-arm-static ]]; then
-        echo "Install qemu arm"
-        return
-    fi
-    SUDO rsync /usr/bin/qemu-arm-static ${MOUNT_POINT}/usr/bin/
-    for f in proc dev sys;do
-        is_mounted $MOUNT_POINT/$f || SUDO mount --bind /$f $MOUNT_POINT/$f
-    done
-}
-
-
-unmount_all() {
-    [ ! -z "$MOUNT_POINT" ] || return 1
-    #[ -z "$keep_mount" ] || return 0
-    for f in proc dev sys boot;do
-        is_mounted $MOUNT_POINT/$f && SUDO umount $MOUNT_POINT/$f
-    done
-    is_mounted $MOUNT_POINT && SUDO umount $MOUNT_POINT
-    mounted=false
-}
-
-
 help () {
     #don't echo commands
     set +x
@@ -123,7 +35,7 @@ help () {
 }
 
 # getopt short options go together, long options have commas
-TEMP=`getopt -o w:h:u:sv --long help,write:,hostname:,user:,shell,verbose,uart,wifi-ssid:,wifi-pass: -n $0 -- "$@"`
+TEMP=`getopt -o w:h:u:svq --long help,write:,hostname:,user:,shell,verbose,uart,wifi-ssid:,wifi-pass: -n $0 -- "$@"`
 if [ $? != 0 ] ; then
     echo "Something wrong with getopt" >&2
     exit 1
@@ -141,6 +53,7 @@ while true ; do
         -s|--shell) rpi_shell=1 ; shift ;;
         --uart) uart=1 ; shift ;;
         -v|--verbose) ((verbose++)) ; shift ;;
+        -q|--quiet) verbose=0 ; shift ;;
         -w|--write) target=$2 ; shift 2 ;;
         --) shift ; break ;;
         *) echo "Internal error!" ; exit 1 ;;
@@ -162,74 +75,187 @@ if [[ ! -z "$target" ]]; then echo "writing to target $target"; fi
 echo "verbosity: $verbose"
 echo "sourcefile: $zipfile"
 
+# if verbose is 3+, echo all commands
+[ $verbose -lt 3 ] || set -x
 
-# if verbose is 2+, echo all commands
-[ $verbose -lt 2 ] || set -x
+# the rest is function delcarations, we call actually_run at the bottom
 
-# STUFF STARTS HERE
 
-#get zipfile, confirm it exists
-if [[ ! -f "$zipfile" ]]; then
-    echo "zipfile/imgfile doesn't exist";
-    exit 1
-fi
+cleanup() {
+    echo "failed $?"
+    if [ "$mounted" = true ]; then
+        unmount_all
+    fi
+}
 
-#TODO: check if latest
-# This will get the latest release
-# curl http://downloads.raspberrypi.org/rss.xml | xq '[.rss.channel.item[] | select(.title | contains("raspbian_lite"))] | .[-1]'
+vecho() { [ $verbose -lt 2 ] || echo $* >/dev/stderr; }
+SUDO() {
+    cmd="sudo $@"
+    [ $verbose -lt 1 ] || echo "SUDO '$cmd'"
 
-zipdir=$(dirname $(realpath "${zipfile}"))
+    $($cmd);
+}
 
-if [ ${zipfile: -4} == ".zip" ]; then
-    imgfile=$(echo "$zipfile" | sed 's/zip$/img/')
-    cd $zipdir
-    if [[ ! -f "$imgfile" ]]; then
-        unzip $zipfile
+dd_somewhere () {
+    dev=$1
+    if [ ! -e "$dev" ]; then
+        echo "$dev doesn't exist"
+        exit 1
+    fi
+    echo "dding to $dev"
+    SUDO dd if="$imgfile" of=$dev bs=1M status=progress
+}
+
+
+mount_loop() {
+    mounted=true
+    # using SUDO breaks everything
+    loop=$(sudo losetup -f -P --show "$imgfile")
+    SUDO mount "${loop}p2" "$MOUNT_POINT"
+    SUDO mount "${loop}p1" "$MOUNT_POINT/boot"
+    ## bootStart=$(parted -s "$imgfile" unit B print 2>/dev/null | awk '/^Number/{p=1;next}; p{gsub(/[^[:digit:]]/, "", $2); print $2}' | head -n1)
+    ## bootSize=$(parted -s "$imgfile" unit B print 2>/dev/null | awk '/^Number/{p=1;next}; p{gsub(/[^[:digit:]]/, "", $4); print $4}' | head -n1)
+    ## rootStart=$(parted -s "$imgfile" unit B print 2>/dev/null | awk '/^Number/{p=1;next}; p{gsub(/[^[:digit:]]/, "", $2); print $2}' | head -n2 | tail -n1)
+    ## rootSize=$(parted -s "$imgfile" unit B print 2>/dev/null | awk '/^Number/{p=1;next}; p{gsub(/[^[:digit:]]/, "", $4); print $4}' | head -n2 | tail -n1)
+    ## #parted -s "$imgfile" unit B print
+    ## #echo "bootStart: $bootStart"
+    ## #echo "bootSize: $bootSize"
+    ## #echo "rootStart: $rootStart"
+    ## #echo "rootSize: $rootSize"
+    ## #exit 50
+
+    ## # check if things end in "B" because parted does that sometimes and mount doesn't like it
+    ## if [[ "$bootStart" =~ [^0-9] ]]; then
+    ##     #some non-numerics
+    ##     if [[ "$bootStart" =~ [0-9]B$ ]]; then
+    ##         #strip B off all sizes
+    ##         bootStart=${bootStart::-1}
+    ##         bootSize=${bootSize::-1}
+    ##         rootStart=${rootStart::-1}
+    ##         rootSize=${rootSize::-1}
+    ##     else
+    ##         echo "boot start invalid: '$bootStart'"
+    ##     fi
+    ## fi
+
+
+    ## echo "mounting"
+    ## SUDO mount -o loop,offset="$rootStart",sizelimit="$rootSize" "$imgfile" $MOUNT_POINT
+    ## SUDO mount -o loop,offset="$bootStart",sizelimit="$bootSize" "$imgfile" $MOUNT_POINT/boot
+}
+
+is_mounted() {
+    mount | grep $(realpath $1 2>/dev/null) &>/dev/null
+}
+
+setup_chroot() {
+    # "make sure binfmt-support will be able to execute your code once you change your root filesystem"
+    # shomehow qemu-arm-static does that.
+    if [[ ! -f /usr/bin/qemu-arm-static ]]; then
+        echo "Install qemu arm"
+        return
+    fi
+    SUDO cp /usr/bin/qemu-arm-static ${MOUNT_POINT}/usr/bin/
+
+    SUDO mv $MOUNT_POINT/etc/ld.so.preload $MOUNT_POINT/etc/ld.so.preload.disabled
+
+    for f in proc dev dev/pts sys ;do
+        vecho "trying to mount $f"
+        is_mounted $MOUNT_POINT/$f || SUDO mount --bind /$f $MOUNT_POINT/$f
+    done
+}
+
+
+unmount_all() {
+    [ ! -z "$MOUNT_POINT" ] || return 1
+    #[ -z "$keep_mount" ] || return 0
+
+    # we disabled /etc/ld.so.preload, so if we disabled it re-enable it
+    [ -f $MOUNT_POINT/etc/ld.so.preload.disabled ] && SUDO mv $MOUNT_POINT/etc/ld.so.preload.disabled $MOUNT_POINT/etc/ld.so.preload
+
+    for f in proc dev/pts dev sys boot;do
+        vecho "trying to unmount $f"
+        is_mounted $MOUNT_POINT/$f && SUDO umount $MOUNT_POINT/$f
+    done
+    is_mounted $MOUNT_POINT && SUDO umount $MOUNT_POINT
+    losetup --list | grep "$loop" >/dev/null && SUDO losetup -d "$loop"
+    mounted=false
+}
+
+
+
+
+
+actually_run() {
+    #get zipfile, confirm it exists
+    if [[ ! -f "$zipfile" ]]; then
+        echo "zipfile/imgfile doesn't exist";
+        exit 1
+    fi
+
+    latest=$(curl -s http://downloads.raspberrypi.org/rss.xml | xq '[.rss.channel.item[] | select(.title | contains("raspbian_lite"))] | .[-1]' | jq .title)
+
+    echo "latest: $latest"
+    echo "yours: $zipfile"
+    read -n 1 -s -r -p "Press the any key to continue"
+    echo ""
+
+    zipdir=$(dirname $(realpath "${zipfile}"))
+
+    if [ ${zipfile: -4} == ".zip" ]; then
+        imgfile=$(echo "$zipfile" | sed 's/zip$/img/')
+        cd $zipdir
         if [[ ! -f "$imgfile" ]]; then
-          echo "Issue unzipping $zipfile";
-          exit 1
+            unzip $zipfile
+            if [[ ! -f "$imgfile" ]]; then
+              echo "Issue unzipping $zipfile";
+              exit 1
+            fi
         fi
+    else
+        imgfile=$zipfile
     fi
-else
-    imgfile=$zipfile
-fi
 
 
-trap cleanup EXIT ERR
+    trap cleanup EXIT ERR
 
-#START OF ACTUAL STUFF
-unmount_all
-mount_loop
-if [ -z "${MOUNT_POINT}" -o ! -f "$MOUNT_POINT/etc/rpi-issue" -o ! -f "$MOUNT_POINT/boot/issue.txt" ]; then
-    help raspbian root not as expected
-fi
-#now we're mounted in memory
+    unmount_all
 
-SUDO touch $MOUNT_POINT/boot/ssh
+    #START OF ACTUAL STUFF
 
-setup_chroot
-#now we can run commands with chroot and exepct them to work
-
-#assume that if the /home/pi directory doesn't exist, all setup is done.
-if [ -d $MOUNT_POINT/home/pi/ ]; then
-    if [ ! -d $MOUNT_POINT/home/pi/.dotfiles ]; then
-        SUDO git clone https://github.com/mtfurlan/dotfiles.git $MOUNT_POINT/home/pi/.dotfiles
-        SUDO chown -R 1000:1000 $MOUNT_POINT/home/pi/.dotfiles
+    mount_loop
+    if [ -z "${MOUNT_POINT}" -o ! -f "$MOUNT_POINT/etc/rpi-issue" -o ! -f "$MOUNT_POINT/boot/issue.txt" ]; then
+        help raspbian root not as expected
     fi
-    SUDO chroot ${MOUNT_POINT} "usermod -l $username pi"
-    SUDO chroot ${MOUNT_POINT} "usermod -d /home/$username -m $username"
-    SUDO chroot ${MOUNT_POINT} bash -c "echo \"$username:hunter.2\" | chpasswd"
-    #set hostname
-    SUDO sed -i "s/raspberrypi/$hostname/" $MOUNT_POINT/etc/hosts $MOUNT_POINT/etc/hostname
+    #now we're mounted in memory
 
-    if [ "$uart" -eq 1 ]; then
-        sudo tee -a "$MOUNT_POINT/boot/config.txt" >/dev/null <<EOF
+    SUDO touch $MOUNT_POINT/boot/ssh
+
+    setup_chroot
+    #now we can run commands with chroot and exepct them to work
+
+    #assume that if the /home/pi directory doesn't exist, all setup is done.
+    if [ ! -d $MOUNT_POINT/home/pi/ ]; then
+        echo "ASSUMING IMAGE ALREADY CONFIGURED: TODO maybe not that"
+    else
+        if [ ! -d $MOUNT_POINT/home/pi/.dotfiles ]; then
+            SUDO git clone https://github.com/mtfurlan/dotfiles.git $MOUNT_POINT/home/pi/.dotfiles
+            SUDO chown -R 1000:1000 $MOUNT_POINT/home/pi/.dotfiles
+        fi
+        SUDO chroot ${MOUNT_POINT} "usermod -l $username pi"
+        SUDO chroot ${MOUNT_POINT} "usermod -d /home/$username -m $username"
+        SUDO chroot ${MOUNT_POINT} bash -c "echo \"$username:hunter.2\" | chpasswd"
+        #set hostname
+        SUDO sed -i "s/raspberrypi/$hostname/" $MOUNT_POINT/etc/hosts $MOUNT_POINT/etc/hostname
+
+        if [ "$uart" -eq 1 ]; then
+            sudo tee -a "$MOUNT_POINT/boot/config.txt" >/dev/null <<EOF
 enable_uart=1
 EOF
-    fi
-    if [[ ! -z "$wifi_ssid" ]]; then
-        echo "NOTICE: wifi doesn't work"
-        sudo tee "$MOUNT_POINT/boot/wpa_supplicant.conf" >/dev/null <<EOF
+        fi
+        if [[ ! -z "$wifi_ssid" ]]; then
+            echo "NOTICE: wifi doesn't work"
+            sudo tee "$MOUNT_POINT/boot/wpa_supplicant.conf" >/dev/null <<EOF
 country=us
 update_config=1
 ctrl_interface=/var/run/wpa_supplicant
@@ -238,23 +264,23 @@ network={
     psk="$wifi_pass"
 }
 EOF
+        fi
     fi
 
-else
-    echo "ASSUMING IMAGE ALREADY CONFIGURED: TODO maybe not that"
-fi
-
-if [ "$rpi_shell" -eq 1 ]; then
-    sudo chroot ${MOUNT_POINT} bash -i
-fi
+    if [ "$rpi_shell" -eq 1 ]; then
+        sudo chroot ${MOUNT_POINT} bash -i
+    fi
 
 
-unmount_all
 
-if [[ ! -z "$target" ]]; then
-    dd_somewhere $target
-fi
+    unmount_all
 
+    if [[ ! -z "$target" ]]; then
+        dd_somewhere $target
+    fi
+}
+
+actually_run
 
 ## Notes
 ### if headless, lower GPU memory
