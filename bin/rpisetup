@@ -31,7 +31,10 @@ help () {
     echo "                          TODO: wifi doesn't work, wlan0 just doesn't get enabled?"
     echo " -v, --verbose            verbosity, 2 levels"
     echo " -q, --quiet              none verbosity"
-    exit
+
+    # if args, exit 1 else exit 0
+    [ $# == 0 ] || exit 1
+    exit 0
 }
 
 # getopt short options go together, long options have commas
@@ -193,7 +196,7 @@ actually_run() {
         exit 1
     fi
 
-    latest=$(curl -s http://downloads.raspberrypi.org/rss.xml | xq '[.rss.channel.item[] | select(.title | contains("raspbian_lite"))] | .[-1]' | jq .title)
+    latest=$(curl -s http://downloads.raspberrypi.org/rss.xml | xq '[.rss.channel.item[] | select(.title | contains("raspbian_lite"))] | .[-1]' | jq .link | sed -n 's/.*\([[:digit:]]\{4\}-[[:digit:]]\{2\}-[[:digit:]]\{2\}-raspbian-[[:alpha:]]*-lite\).zip.torrent.*/\1/p')
 
     echo "latest: $latest"
     echo "yours: $zipfile"
