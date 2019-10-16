@@ -1,6 +1,74 @@
 #.bash_profile, executed by login shells
 #Also executed by .bashrc, so all shells really
 
+# If not running interactively, don't do anything
+# TODO: is this important?
+case $- in
+    *i*) ;;
+      *) return;;
+esac
+
+export EDITOR=vim
+export VISUAL=vim
+export PATH=~/bin:~/local/bin:~/.local/bin:/sbin:/usr/sbin:/usr/local/sbin:$PATH
+
+
+# don't put duplicate lines or lines starting with space in the history.
+# See bash(1) for more options
+HISTCONTROL=ignoreboth
+
+# append to the history file, don't overwrite it
+shopt -s histappend
+
+# for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
+HISTSIZE=1000
+HISTFILESIZE=2000
+
+# check the window size after each command and, if necessary,
+# update the values of LINES and COLUMNS.
+shopt -s checkwinsize
+
+# If set, the pattern "**" used in a pathname expansion context will
+# match all files and zero or more directories and subdirectories.
+shopt -s globstar
+
+#vi mode
+set -o vi
+
+
+#allow machine specific config
+if [ -r ~/.localrc ]; then
+    . ~/.localrc
+fi
+
+# Alias
+if [ -r ~/.aliasrc ]; then
+    . ~/.aliasrc
+fi
+
+# fzf
+if [ -r ~/.fzf.bash ]; then
+    . ~/.fzf.bash
+fi
+
+# diff so fancy
+if which diff-so-fancy > /dev/null; then
+    export GIT_PAGER="diff-so-fancy | less --tabs=4 -RFX"
+else
+    export GIT_PAGER="less -R"
+fi
+
+# https://github.com/nvbn/thefuck
+# defines 'fuck' as a command to fix the last command
+if which thefuck >/dev/null; then
+    eval $(thefuck --alias)
+fi
+
+# make less more friendly for non-text input files, see lesspipe(1)
+[ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
+
+
+
 
 # Check if we support colours
 __colour_enabled() {
@@ -30,45 +98,6 @@ else
      unset Whi;  unset BWhi
      unset None
 fi
-
-
-#allow machine specific config
-if [ -f ~/.bash_local ]; then
-    . ~/.bash_local
-fi
-
-
-export EDITOR=vim
-export VISUAL=vim
-export PATH=~/bin:~/local/bin:~/.local/bin:/sbin:/usr/sbin:/usr/local/sbin:$PATH
-
-# If not running interactively, don't do anything
-case $- in
-    *i*) ;;
-      *) return;;
-esac
-
-# don't put duplicate lines or lines starting with space in the history.
-# See bash(1) for more options
-HISTCONTROL=ignoreboth
-
-# append to the history file, don't overwrite it
-shopt -s histappend
-
-# for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
-HISTSIZE=1000
-HISTFILESIZE=2000
-
-# check the window size after each command and, if necessary,
-# update the values of LINES and COLUMNS.
-shopt -s checkwinsize
-
-# If set, the pattern "**" used in a pathname expansion context will
-# match all files and zero or more directories and subdirectories.
-shopt -s globstar
-
-# make less more friendly for non-text input files, see lesspipe(1)
-#[ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
 
 # set variable identifying the chroot you work in (used in the prompt below)
 if [ -z "${debian_chroot:-}" ] && [ -r /etc/debian_chroot ]; then
@@ -106,18 +135,12 @@ else
 fi
 
 # enable color support of ls and also add handy aliases
-if [ -x /usr/bin/dircolors ]; then
+if which dircolors >/dev/null; then
     test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
 fi
 
 # colored GCC warnings and errors
 export GCC_COLORS='error=01;31:warning=01;35:note=01;36:caret=01;32:locus=01:quote=01'
-
-# Alias definitions.
-# See /usr/share/doc/bash-doc/examples in the bash-doc package.
-if [ -f ~/.bash_aliases ]; then
-    . ~/.bash_aliases
-fi
 
 # enable programmable completion features (you don't need to enable
 # this, if it's already enabled in /etc/bash.bashrc and /etc/profile
@@ -131,24 +154,6 @@ if ! shopt -oq posix; then
     complete -cf sudo
 fi
 
-set -o vi
-
-if [ -f ~/.fzf.bash ]; then
-    source ~/.fzf.bash
-fi
-
-if which diff-so-fancy > /dev/null; then
-    export GIT_PAGER="diff-so-fancy | less --tabs=4 -RFX"
-else
-    export GIT_PAGER="less -R"
-fi
-
-
-# https://github.com/nvbn/thefuck
-# defines 'fuck' as a command to fix the last command
-if which thefuck >/dev/null; then
-    eval $(thefuck --alias)
-fi
 
 # -- Improved X11 forwarding through GNU Screen (or tmux).
 # http://alexteichman.com/octo/blog/2014/01/01/x11-forwarding-and-terminal-multiplexers/
