@@ -13,6 +13,8 @@ help() {
   echo "                install tools; "
   echo "           --update-tools; will auto-install tools if used with -n"
   echo "                only update local tools, don't run full setup"
+  echo "           --guest"
+  echo "                don't put personal files in"
   echo "       -g, --checkGithub"
   echo "                check/setup github_rsa"
   echo "       -h, --help"
@@ -24,7 +26,7 @@ help() {
 
 
 # getopt short options go together, long options have commas
-TEMP=`getopt -o nsgh --long new,symlink,update-tools,install-tools,checkGithub,help -n 'test.sh' -- "$@"`
+TEMP=`getopt -o nsgh --long new,symlink,update-tools,install-tools,checkGithub,help,guest -n 'test.sh' -- "$@"`
 if [ $? != 0 ] ; then
     echo "Something wrong with getopt" >&2
     exit 1
@@ -36,12 +38,14 @@ symlink=false
 updateTools=false
 installTools=false
 checkGithub=false
+guest=false
 while true ; do
     case "$1" in
         -n|--new) new=true ; shift ;;
         -s|--symlink) symlink=true ; shift ;;
         --update-tools) updateTools=true ; shift ;;
         --install-tools) installTools=true ; shift ;;
+        --guest) guest=true ; shift ;;
         -g|--checkGithub) checkGithub=true ; shift ;;
         -h|--help) help ; exit 0 ;;
         --) shift ; break ;;
@@ -207,7 +211,15 @@ symlinks() {
 
   # this probably assumes it's in the ~/.dotfiles dir
 
-  SYMLINK_DIRS="vim/bundle/Vundle.vim $(find vim -maxdepth 1 -type d | grep -v bundle | tail -n +2) bin" lsrc -U bin -x setup.sh -x README.md
+  # "guest" mode because I keep using this on pis I hand out
+  # dont' link ssh config or git config.
+  if [ "$guest" = true ]; then
+    link_exclude="-x ssh -x gitconfig"
+  else
+    link_exclude=""
+  fi
+
+  SYMLINK_DIRS="vim/bundle/Vundle.vim $(find vim -maxdepth 1 -type d | grep -v bundle | tail -n +2) bin" lsrc -U bin -x setup.sh -x README.md $link_exclude
   read -r -p "that look good? [Y/n] " response
   case "$response" in
     [yY][eE][sS]|[yY]|"")
@@ -216,7 +228,7 @@ symlinks() {
       echo "good luck, bye"
       exit 1;;
   esac
-  SYMLINK_DIRS="vim/bundle/Vundle.vim $(find vim -maxdepth 1 -type d | grep -v bundle | tail -n +2) bin" rcup -v -U bin -x setup.sh -x README.md
+  SYMLINK_DIRS="vim/bundle/Vundle.vim $(find vim -maxdepth 1 -type d | grep -v bundle | tail -n +2) bin" rcup -v -U bin -x setup.sh -x README.md $link_exclude
 }
 
 ## execution starts here
