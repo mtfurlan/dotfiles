@@ -1,6 +1,11 @@
 #!/bin/bash
 set -eEu
 
+# organization:
+# main: parse arguments. Called from the bottom so everything is declared
+# actually_run: actually run
+
+
 # apt install qem-user-static qemu-system-arm
 
 MOUNT_POINT=/mnt/img
@@ -13,6 +18,7 @@ wifi_ssid=""
 wifi_pass=""
 username="mark"
 mounted=false
+keep_mount=false
 
 help () {
     #don't echo commands
@@ -31,57 +37,62 @@ help () {
     echo "                          TODO: wifi doesn't work, wlan0 just doesn't get enabled?"
     echo " -v, --verbose            verbosity, 2 levels"
     echo " -q, --quiet              none verbosity"
+    echo "     --keep-mount         don't unmount at the end"
+    echo "     --unmount            try to unmount a previous run then exit"
 
     # if args, exit 1 else exit 0
     [ $# == 0 ] || exit 1
     exit 0
 }
 
-# getopt short options go together, long options have commas
-TEMP=`getopt -o w:h:u:svq --long help,write:,hostname:,user:,shell,verbose,uart,wifi-ssid:,wifi-pass: -n $0 -- "$@"`
-if [ $? != 0 ] ; then
-    echo "Something wrong with getopt" >&2
-    exit 1
-fi
-eval set -- "$TEMP"
+main() {
+    # getopt short options go together, long options have commas
+    TEMP=`getopt -o w:h:u:svq --long help,write:,hostname:,user:,shell,verbose,uart,wifi-ssid:,wifi-pass:,keep-mount,unmount -n $0 -- "$@"`
+    if [ $? != 0 ] ; then
+        echo "Something wrong with getopt" >&2
+        exit 1
+    fi
+    eval set -- "$TEMP"
 
-dir=""
-while true ; do
-    case "$1" in
-        --help) help; exit 0; shift ;;
-        -h|--hostname) hostname=$2 ; shift 2 ;;
-        -u|--user) username=$2 ; shift 2 ;;
-        --wifi-ssid) wifi_ssid=$2 ; shift 2 ;;
-        --wifi-pass) wifi_pass=$2 ; shift 2 ;;
-        -s|--shell) rpi_shell=1 ; shift ;;
-        --uart) uart=1 ; shift ;;
-        -v|--verbose) ((verbose++)) ; shift ;;
-        -q|--quiet) verbose=0 ; shift ;;
-        -w|--write) target=$2 ; shift 2 ;;
-        --) shift ; break ;;
-        *) echo "Internal error!" ; exit 1 ;;
-    esac
-done
+    while true ; do
+        case "$1" in
+            --help) help; exit 0; shift ;;
+            -h|--hostname) hostname=$2 ; shift 2 ;;
+            -u|--user) username=$2 ; shift 2 ;;
+            --wifi-ssid) wifi_ssid=$2 ; shift 2 ;;
+            --wifi-pass) wifi_pass=$2 ; shift 2 ;;
+            -s|--shell) rpi_shell=1 ; shift ;;
+            --uart) uart=1 ; shift ;;
+            -v|--verbose) ((verbose++)) ; shift ;;
+            -q|--quiet) verbose=0 ; shift ;;
+            -w|--write) target=$2 ; shift 2 ;;
+            --keep-mount) keep_mount=true ; shift ;;
+            --unmount) unmount_all ; exit 0 ; shift ;;
+            --) shift ; break ;;
+            *) echo "Internal error!" ; exit 1 ;;
+        esac
+    done
 
-#if no source file, help
-if [ $# -eq 0 ]; then
-    help
-    exit 1;
-fi
+    #if no source file, help
+    if [ $# -eq 0 ]; then
+        help
+        exit 1;
+    fi
 
-zipfile=${1:-}
+    zipfile=${1:-}
 
-if [[ ! -z "$hostname" ]]; then echo "hostname: $hostname"; fi
-echo "username: $username"
-if [ "$rpi_shell" -eq 1 ]; then echo "launching shell"; fi
-if [[ ! -z "$target" ]]; then echo "writing to target $target"; fi
-echo "verbosity: $verbose"
-echo "sourcefile: $zipfile"
+    if [[ ! -z "$hostname" ]]; then echo "hostname: $hostname"; fi
+    echo "username: $username"
+    if [ "$rpi_shell" -eq 1 ]; then echo "launching shell"; fi
+    if [[ ! -z "$target" ]]; then echo "writing to target $target"; fi
+    echo "verbosity: $verbose"
+    echo "sourcefile: $zipfile"
 
-# if verbose is 3+, echo all commands
-[ $verbose -lt 3 ] || set -x
+    # if verbose is 3+, echo all commands
+    [ $verbose -lt 3 ] || set -x
 
-# the rest is function delcarations, we call actually_run at the bottom
+    actually_run
+}
 
 
 cleanup() {
@@ -168,10 +179,20 @@ setup_chroot() {
     done
 }
 
+run_chroot() {
+    cmd="sudo chroot ${MOUNT_POINT} /bin/bash -c \"$@\""
+    echo "running for chroot '$cmd'"
+    eval "$cmd"
+}
+
+
 
 unmount_all() {
     [ ! -z "$MOUNT_POINT" ] || return 1
-    #[ -z "$keep_mount" ] || return 0
+    if [ "$keep_mount" = true ]; then
+        echo "NOT UNMOUNTING"
+        return 0;
+    fi
 
     # we disabled /etc/ld.so.preload, so if we disabled it re-enable it
     [ -f $MOUNT_POINT/etc/ld.so.preload.disabled ] && SUDO mv $MOUNT_POINT/etc/ld.so.preload.disabled $MOUNT_POINT/etc/ld.so.preload
@@ -181,7 +202,12 @@ unmount_all() {
         is_mounted $MOUNT_POINT/$f && SUDO umount $MOUNT_POINT/$f
     done
     is_mounted $MOUNT_POINT && SUDO umount $MOUNT_POINT
-    losetup --list | grep "$loop" >/dev/null && SUDO losetup -d "$loop"
+    if [ ! "$mounted" = true ]; then
+        echo "we didn't actually mount, so we probably don't know what the lop file was."
+        echo "Check 'losetup --list' and run 'sudo losetup -d /dev/loopX' to cleanup."
+    else
+        losetup --list | grep "$loop" >/dev/null && SUDO losetup -d "$loop"
+    fi
     mounted=false
 }
 
@@ -190,6 +216,10 @@ unmount_all() {
 
 
 actually_run() {
+    if is_mounted $MOUNT_POINT ; then
+        echo "something is mounted to $MOUNT_POINT, fix it and try again"
+        exit 1
+    fi
     #get zipfile, confirm it exists
     if [[ ! -f "$zipfile" ]]; then
         echo "zipfile/imgfile doesn't exist";
@@ -222,8 +252,6 @@ actually_run() {
 
     trap cleanup EXIT ERR
 
-    unmount_all
-
     #START OF ACTUAL STUFF
 
     mount_loop
@@ -232,6 +260,7 @@ actually_run() {
     fi
     #now we're mounted in memory
 
+    # enable ssh
     SUDO touch $MOUNT_POINT/boot/ssh
 
     setup_chroot
@@ -241,15 +270,22 @@ actually_run() {
     if [ ! -d $MOUNT_POINT/home/pi/ ]; then
         echo "ASSUMING IMAGE ALREADY CONFIGURED: TODO maybe not that"
     else
-        if [ ! -d $MOUNT_POINT/home/pi/.dotfiles ]; then
-            SUDO git clone https://github.com/mtfurlan/dotfiles.git $MOUNT_POINT/home/pi/.dotfiles
-            SUDO chown -R 1000:1000 $MOUNT_POINT/home/pi/.dotfiles
-        fi
-        SUDO chroot ${MOUNT_POINT} "usermod -l $username pi"
-        SUDO chroot ${MOUNT_POINT} "usermod -d /home/$username -m $username"
-        SUDO chroot ${MOUNT_POINT} bash -c "echo \"$username:hunter.2\" | chpasswd"
+        run_chroot "groups pi"
+        run_chroot "useradd $username -m -G \\\$(groups pi | sed 's/pi : pi //; s/ /,/g')"
+        run_chroot "echo '$username:hunter.2' | chpasswd"
+        SUDO git clone https://github.com/mtfurlan/dotfiles.git $MOUNT_POINT/home/$username/.dotfiles
+        run_chroot chown -R $username:$username /home/$username/.dotfiles
+        #TODO: can run setup.sh here, but needs to be run as user pi, and pi has sudo prompts
+        # maybe just set $HOME?
+
+        run_chroot sudo deluser -remove-home pi
         #set hostname
-        SUDO sed -i "s/raspberrypi/$hostname/" $MOUNT_POINT/etc/hosts $MOUNT_POINT/etc/hostname
+        run_chroot sed -i "s/raspberrypi/$hostname/" /etc/hosts /etc/hostname
+
+
+        # install random things
+        run_chroot apt update
+        run_chroot apt install -y git tmux vim-nox
 
         if [ "$uart" -eq 1 ]; then
             sudo tee -a "$MOUNT_POINT/boot/config.txt" >/dev/null <<EOF
@@ -283,7 +319,7 @@ EOF
     fi
 }
 
-actually_run
+main "$@"
 
 ## Notes
 ### if headless, lower GPU memory
