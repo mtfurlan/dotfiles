@@ -141,6 +141,10 @@ update_tools() {
   ./package.sh
   sudo dpkg -i ../fpp_*.deb
   popd
+
+  pushd ~/src/rpisetup
+  git pull
+  popd
 }
 
 install_tools() {
@@ -151,6 +155,10 @@ install_tools() {
   ~/.fzf/install --completion --key-bindings --no-update-rc
 
   git clone https://github.com/facebook/PathPicker.git ~/src/PathPicker || true
+
+  git clone https://github.com/mtfurlan/rpisetup.git ~/src/rpisetup || true
+  mkdir -p ~/.local/bin || true
+  ln -s ~/src/rpisetup/rpisetup ~/.local/bin/rpisetup || true
 
   update_tools
 }
