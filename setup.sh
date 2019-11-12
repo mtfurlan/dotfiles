@@ -19,10 +19,13 @@ help() {
   echo "                check/setup github_rsa"
   echo "       -h, --help"
   echo "                display this help"
-  echo "expected usage: "
-  echo "       for first time: '$0 -at'"
-  echo "       for updating managed tools: '$0 -t'"
 }
+
+if [ $# -eq 0 ]; then
+  echo "no arguments passed"
+  help
+  exit 1;
+fi
 
 
 # getopt short options go together, long options have commas
@@ -163,7 +166,7 @@ new_computer() {
       bash --rcfile <(echo "PS1='subshell > '") -i
     fi
     sudo apt-get update
-    sudo apt-get install vim-nox tmux git sl silversearcher-ag curl tree bash-completion rcm rename
+    sudo apt-get install vim-nox tmux git sl silversearcher-ag curl tree bash-completion rcm rename wget
   else
     echo "apt-get not installed, fix setup.sh for this platform"
   fi
