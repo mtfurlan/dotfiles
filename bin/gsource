@@ -4,8 +4,9 @@ set -euo pipefail
 #set -x
 
 help () {
-    echo "Usage: gsource FILE [LINE NUMBER]"
-    echo "Link to the online git file, with optional line number"
+    echo "Usage: $0 FILE [LINE NUMBER]"
+    echo "       $0"
+    echo "Link to the online git file or repo, with optional line number"
     echo "  -h, --help       display this help and exit"
 }
 
@@ -32,26 +33,12 @@ if [[ $help = true ]]; then
     exit 0
 fi
 
-if [[ $# -lt 1 ]]; then
-    help
-    exit 1
-fi
-relFile=$1
-if [[ ! -f $relFile ]]; then
-    echo "file '$relFile' does not exist"
-    exit 2
-fi
+#if [[ $# -lt 1 ]]; then
+#    help
+#    exit 1
+#fi
 
 linkLine=0
-if [[ $# -eq 2 ]]; then
-    line=$2
-    linkLine=1
-fi
-
-# get file relative to git root
-gitRoot=$(git rev-parse --show-toplevel)
-fullFile=$(realpath $relFile) # get full path of relative filepath
-file=${fullFile#"$gitRoot/"} # remove prefix of $gitRoot/
 
 # get git remote URL
 # just picks the first
@@ -81,6 +68,28 @@ fi
 
 # parse remote URL (git@ or https://) to something like "tomesoftware/chad-db"
 repo=$(echo $url | sed 's/.*[\/:]\([^\/]*\)\/\([^\/]*\).git$/\1\/\2/')
+
+# if no args, just print repo url
+if [[ $# -lt 1 ]]; then
+    echo "https://$provider/$repo"
+    exit 0
+fi
+
+relFile=$1
+if [[ ! -f $relFile ]]; then
+    echo "file '$relFile' does not exist"
+    exit 2
+fi
+
+if [[ $# -eq 2 ]]; then
+    line=$2
+    linkLine=1
+fi
+
+# get file relative to git root
+gitRoot=$(git rev-parse --show-toplevel)
+fullFile=$(realpath $relFile) # get full path of relative filepath
+file=${fullFile#"$gitRoot/"} # remove prefix of $gitRoot/
 
 # get current branch or commit hash
 # https://stackoverflow.com/a/1593487/2423187
