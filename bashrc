@@ -69,26 +69,17 @@ fi
 
 
 
+# number of colors supported
+colors=0
+if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
+    # We have color support; assume it's compliant with Ecma-48
+    # (ISO/IEC-6429). (Lack of such support is extremely rare, and such
+    # a case would tend to support setf rather than setaf.)
 
-# Check if we support colours
-__colour_enabled() {
-    local -i colors=$(tput colors 2>/dev/null)
-    [[ $? -eq 0 ]] && [[ $colors -gt 2 ]]
-}
-
-if __colour_enabled; then
-    # define colours
-    # Wrap the colour codes between \[ and \], so that
-    # bash counts the correct number of characters for line wrapping:
-     Red='\[\033[01;31m\]';  BRed='\[\e[1;31m\]'
-     Gre='\[\033[01;32m\]';  BGre='\[\e[1;32m\]'
-     Yel='\[\e[0;33m\]';  BYel='\[\e[1;33m\]'
-     Blu='\[\033[01;34m\]';  BBlu='\[\e[1;34m\]'
-     Mag='\[\e[0;35m\]';  BMag='\[\e[1;35m\]'
-     Cya='\[\e[0;36m\]';  BCya='\[\e[1;36m\]'
-     Whi='\[\e[0;37m\]';  BWhi='\[\e[1;37m\]'
-     None='\[\e[0m\]' # Return to default colour
+    #I dunno why tput colors 2 vs tput colors
+    colors=$(tput colors 2>/dev/null)
 fi
+
 
 # set variable identifying the chroot you work in (used in the prompt below)
 if [ -z "${debian_chroot:-}" ] && [ -r /etc/debian_chroot ]; then
@@ -118,21 +109,31 @@ export GIT_PS1_STATESEPARATOR=" "
 export GIT_PS1_DESCRIBE_STYLE="describe"  # detached HEAD style:
 
 
-if __colour_enabled; then
+if [[ $colors -gt 2 ]]; then
+    Red=$(tput setaf 1)
+    Gre=$(tput setaf 10)
+    Blu=$(tput setaf 12)
+    Cya=$(tput setaf 14)
+    None=$(tput sgr0)
+
     export GIT_PS1_SHOWCOLORHINTS=1
 
     #A way to show if user is in groups wheel, sudo, or adm
     if [[ `groups` =~ wheel|sudo|adm ]]; then
-        sudoPS1="\[\e[32m\](s)\[\e[m\]"
+        sudoPS1="$Gre(s)$None"
     else
-        sudoPS1="\[\e[31m\](ns)\[\e[m\]"
+        sudoPS1="$Red(ns)$None"
     fi
 
     # http://serverfault.com/a/425657/228348
-    hostnamecolor=$(hostname | od | tr ' ' '\n' | awk '{total = total + $1}END{print 30 + (total % 6)}')
+    # use color range 130-210
+    hostColorIndex=$(hostname | od | tr ' ' '\n' | awk '{total = total + $1}END{print 130 + (total % 80)}')
+    hostColor=$(tput setaf $hostColorIndex)
 
-    #the first bit just shows the return code if nonzero, in red
-    myFancyPS1Start="${debian_chroot:+($debian_chroot)}$Red\${?##0}$Cya$VENV$Gre\u@\[\e[${hostnamecolor}m\]\h$sudoPS1:$Blu\w$None"
+    # debian chroot stuff copied from a debian /etc/skel/.bahsrc
+    # \${?##0} shows the return code if nonzero
+    # VENV is a function that is either empty or the python virtualenv name
+    myFancyPS1Start="${debian_chroot:+($debian_chroot)}$Red\${?##0}$Cya$VENV$Gre\u@$hostColor\h$sudoPS1:$Blu\w$None"
     myFancyPS1End="$None$ "
     PROMPT_COMMAND='__git_ps1 "$myFancyPS1Start" "$myFancyPS1End"'
 else
