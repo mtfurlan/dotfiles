@@ -88,21 +88,26 @@ if __colour_enabled; then
      Cya='\[\e[0;36m\]';  BCya='\[\e[1;36m\]'
      Whi='\[\e[0;37m\]';  BWhi='\[\e[1;37m\]'
      None='\[\e[0m\]' # Return to default colour
-else
-     unset Red;  unset BRed
-     unset Gre;  unset BGre
-     unset Yel;  unset BYel
-     unset Blu;  unset BBlu
-     unset Mag;  unset BMag
-     unset Cya;  unset BCya
-     unset Whi;  unset BWhi
-     unset None
 fi
 
 # set variable identifying the chroot you work in (used in the prompt below)
 if [ -z "${debian_chroot:-}" ] && [ -r /etc/debian_chroot ]; then
     debian_chroot=$(cat /etc/debian_chroot)
 fi
+
+
+# stuff to make python virtual envs work with the fancy git ps1 fuckery
+# disable the default virtualenv prompt change
+export VIRTUAL_ENV_DISABLE_PROMPT=1
+
+# based on https://stackoverflow.com/a/20026992/2423187
+function virtualenv_info(){
+    if [[ -n "$VIRTUAL_ENV" ]]; then
+        # Strip out the path and just leave the env name
+        echo "(${VIRTUAL_ENV##*/})"
+    fi
+}
+VENV="\$(virtualenv_info)";
 
 
 export GIT_PS1_SHOWDIRTYSTATE=1           # '*'=unstaged, '+'=staged
@@ -118,20 +123,20 @@ if __colour_enabled; then
 
     #A way to show if user is in groups wheel, sudo, or adm
     if [[ `groups` =~ wheel|sudo|adm ]]; then
-        sudo="\[\e[32m\](s)\[\e[m\]"
+        sudoPS1="\[\e[32m\](s)\[\e[m\]"
     else
-        sudo="\[\e[31m\](ns)\[\e[m\]"
+        sudoPS1="\[\e[31m\](ns)\[\e[m\]"
     fi
 
     # http://serverfault.com/a/425657/228348
     hostnamecolor=$(hostname | od | tr ' ' '\n' | awk '{total = total + $1}END{print 30 + (total % 6)}')
 
     #the first bit just shows the return code if nonzero, in red
-    myFancyPS1Start="${debian_chroot:+($debian_chroot)}$Red\${?##0}$Gre\u@\[\e[${hostnamecolor}m\]\h$sudo:$Blu\w$None"
+    myFancyPS1Start="${debian_chroot:+($debian_chroot)}$Red\${?##0}$Cya$VENV$Gre\u@\[\e[${hostnamecolor}m\]\h$sudoPS1:$Blu\w$None"
     myFancyPS1End="$None$ "
     PROMPT_COMMAND='__git_ps1 "$myFancyPS1Start" "$myFancyPS1End"'
 else
-    PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
+    PS1='${debian_chroot:+($debian_chroot)}$VENV\u@\h:\w\$ '
 fi
 
 # enable color support of ls and also add handy aliases
