@@ -109,12 +109,12 @@ export GIT_PS1_STATESEPARATOR=" "
 export GIT_PS1_DESCRIBE_STYLE="describe"  # detached HEAD style:
 
 
-if [[ $colors -gt 2 ]]; then
-    Red=$(tput setaf 1)
-    Gre=$(tput setaf 10)
-    Blu=$(tput setaf 12)
-    Cya=$(tput setaf 14)
-    None=$(tput sgr0)
+if [[ $colors -ge 256 ]]; then
+    Red="\[$(tput setaf 1)\]"
+    Gre="\[$(tput setaf 10)\]"
+    Blu="\[$(tput setaf 12)\]"
+    Cya="\[$(tput setaf 14)\]"
+    None="\[$(tput sgr0)\]"
 
     export GIT_PS1_SHOWCOLORHINTS=1
 
@@ -128,7 +128,7 @@ if [[ $colors -gt 2 ]]; then
     # http://serverfault.com/a/425657/228348
     # use color range 130-210
     hostColorIndex=$(hostname | od | tr ' ' '\n' | awk '{total = total + $1}END{print 130 + (total % 80)}')
-    hostColor=$(tput setaf $hostColorIndex)
+    hostColor="\[$(tput setaf $hostColorIndex)\]"
 
     # debian chroot stuff copied from a debian /etc/skel/.bahsrc
     # \${?##0} shows the return code if nonzero
