@@ -28,3 +28,45 @@
 	old = red bold
 	new = green bold
 	whitespace = red reverse
+
+[alias]
+	# short aliases
+	st = status
+	co = checkout
+	ci = commit
+	br = branch
+	df = diff
+	lg = log -p
+	rso = remote show origin
+	me = config user.name
+	smash = !git ir
+
+	# interactive rebase
+	ir = !sh -c 'git rebase -i origin/${1-master}' -
+
+	up = !git pull --rebase --prune --autostash --recurse-submodules
+
+	llog = !git log --pretty=format:'%Cgreen(%ci)%Creset %Cred%h%Creset %<(20,trunc)%C(bold blue)%an%Creset  %s %C(yellow)%d%Creset ' --abbrev-commit
+	glog = !git log --graph --all --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative
+
+	# all commits that aren't merges on all branches
+	all = !git log --pretty=oneline --abbrev-commit --all --no-merges
+
+	# all commits today for only me
+	today = !git llog --since='12am' --all --no-merges --committer=\"`git me`\"
+
+	# and yesterday
+	yesterday = !git llog --since='yesterday 12am' --until='12am' --all --no-merges --committer=\"`git me`\"
+
+	# and the same, but for everyone
+	today-all = !git llog --since='12am' --all --no-merges
+	yesterday-all = !git llog --since='yesterday 12am' --until='12am' --all --no-merges
+
+	up-log = !sh -c 'logstart=$(git rev-parse HEAD) && git up && echo "" && git --no-pager llog ${logstart}.. --stat'
+
+	# clean up after PR has been merged
+	prdone = !"sh -c 'branch=$(git rev-parse --abbrev-ref HEAD) && git co ${1-develop} && git up && if git ls-remote origin $branch | grep $branch >/dev/null; then echo \"$branch has remote-tracking, figure it out\"; false; else git branch -d $branch; fi'"
+
+	# `git clean-merged`
+	# clean up merged branches
+	#clean-merged = "!git branch --merged | grep -v '\\^\\*\\|master' | xargs -n 1 git branch -d"

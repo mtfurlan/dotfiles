@@ -12,8 +12,7 @@ alias df='df -h'
 
 alias tmux='tmux -2'
 
-alias glog="git log --graph --all --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative"
-#alias gammend='GIT_COMMITTER_DATE=\"`git log -1 --format=%cd`\" git commit --amend'
+alias glog='git glog'
 
 alias ix="curl -F 'f:1=<-' ix.io"
 alias qr='curl -F-=\<- qrenco.de'
