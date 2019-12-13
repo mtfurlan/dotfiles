@@ -25,25 +25,6 @@ clone_or_pull "kicad-packages3D" "git@github.com:KiCad/kicad-packages3D.git"
 clone_or_pull "kicad-symbols" "git@github.com:KiCad/kicad-symbols.git"
 clone_or_pull "kicad-templates" "git@github.com:KiCad/kicad-templates.git"
 
-echo "${Red}edit ~/.config/kicad/kicad_local to have the EnvironmentVariables section look like${None}"
-cat <<EOF
-
-DIGIKEY_KICAD_LIBRARY=/home/mark/kicad/digikey-kicad-library
-KICAD_SYMBOL_DIR=/home/mark/kicad/official_libs/kicad-symbols
-KIGITHUB=https://github.com/KiCad
-KISYS3DMOD=/home/mark/kicad/official_libs/kicad-packages3D
-KISYSMOD=/home/mark/kicad/official_libs/kicad-footprint
-KICAD_PTEMPLATES=/home/mark/kicad/official_libs/kicad-templates
-KICAD_TEMPLATE_DIR=/home/mark/kicad/official_libs/kicad-templates
-KICAD_USER_TEMPLATE_DIR=/home/kicad/template
-
-EOF
-
-echo "${Red}add this to the ~/.config/kicad/fp-lib-table${None}"
-cat <<EOF
-  (lib (name Digi-Key)(type KiCad)(uri \${DIGIKEY_KICAD_LIBRARY}/digikey-footprints.pretty/)(options "")(descr ""))
-EOF
-
 # make a kicad-libraries dummy package
 cat > ~/kicad/debian/kicad-libraries-dummy <<EOF
 # Source: <source package name; defaults to package name>
@@ -62,3 +43,27 @@ EOF
 pushd ~/kicad/debian
 equivs-build kicad-libraries-dummy
 sudo dpkg -i ./kicad-libraries-dummy*.deb
+
+
+echo "${Red}edit ~/.config/kicad/kicad_common to have the EnvironmentVariables section look like${None}"
+cat <<EOF
+
+DIGIKEY_KICAD_LIBRARY=/home/mark/kicad/digikey-kicad-library
+KICAD_SYMBOL_DIR=/home/mark/kicad/official_libs/kicad-symbols
+KISYS3DMOD=/home/mark/kicad/official_libs/kicad-packages3D
+KISYSMOD=/home/mark/kicad/official_libs/kicad-footprint
+KICAD_PTEMPLATES=/home/mark/kicad/official_libs/kicad-templates
+# don't modify these in the file
+KIGITHUB=https://github.com/KiCad
+KICAD_TEMPLATE_DIR=/usr/share/kicad/template
+KICAD_USER_TEMPLATE_DIR=/home/mark/template
+
+EOF
+
+echo "start kicad, open the symbol and footprint library things so it asks you to copy a default lib table"
+echo "in the symbol library, add by directory and add all the digikey library stuff"
+
+echo "${Red}add this to the ~/.config/kicad/fp-lib-table${None}"
+cat <<EOF
+  (lib (name Digi-Key)(type KiCad)(uri \${DIGIKEY_KICAD_LIBRARY}/digikey-footprints.pretty/)(options "")(descr ""))
+EOF
