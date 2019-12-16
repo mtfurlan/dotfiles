@@ -1,6 +1,6 @@
 #!/bin/bash
 # sudo apt-get install dmenu exifprobe exiv2 feh
-# feh --scale-down --auto-zoom --action1 "feh-sorting.sh dir %F" --action2 "feh-sorting.sh rename %F" --info "feh-sorting.sh show %F"
+# feh --scale-down --auto-zoom --action1 "feh-sorting.sh --from-feh dir %F" --action2 "feh-sorting.sh --from-feh rename %F" --info "feh-sorting.sh --from-feh show %F"
 # ~/.config/feh/keys
 #    render n
 #    next_img j Right space
@@ -15,12 +15,47 @@
 #    action_1 m
 #    action_2 r
 
-if [ $# -lt 2 ]
-then
-    echo -e usage: "$0 <action> <filename>\n actions: edit-comment, edit-tags"
-    exit -1
+
+help () {
+    # if arguments, print them
+    [ $# == 0 ] || echo $*
+
+    echo "Usage: $0 FILENAME..."
+    echo "       $0 --from-feh ACTION FILENAME"
+    echo "sort filenames"
+    echo "  -h, --help       display this help and exit"
+    echo "  --from-feh       script is being called from feh, do ACTION on FILENAME"
+
+    # if args, exit 1 else exit 0
+    [ $# == 0 ] || exit 1
+    exit 0
+}
+
+# getopt short options go together, long options have commas
+TEMP=`getopt -o h --long help,from-feh -n "$0" -- "$@"`
+if [ $? != 0 ] ; then
+    echo "Something wrong with getopt" >&2
+    exit 1
+fi
+eval set -- "$TEMP"
+
+fromFeh=false
+while true ; do
+    case "$1" in
+        -h|--help) help; exit 0; shift ;;
+        --from-feh) fromFeh=true ; shift ;;
+        --) shift ; break ;;
+        *) echo "Internal error, unexpected argument '$0'!" ; exit 1 ;;
+    esac
+done
+
+# if not called from feh, run feh and exit
+if [ "$fromFeh" = false ]; then
+    feh --scale-down --auto-zoom --action1 "$0 --from-feh dir %F" --action2 "$0 --from-feh rename %F" --info "$0 --from-feh show %F" "$@"
+    exit $?
 fi
 
+#called from feh, parse action/filename
 action=$1
 file=$2
 
@@ -47,8 +82,7 @@ if [ "$action" == "rename" ]; then
 fi
 if [ "$action" == "edit-comment" ]; then
     commentText=$(echo "$(exiv2 -Pt -g Exif.Photo.UserComment $file)" | dmenu)
-    if [ $? -ne 1 ] # not aborted
-    then
+    if [ $? -ne 1 ]; then # not aborted
         if [ -z "$commentText" ]; then
             exiv2 -M"del Exif.Photo.UserComment" $file
         else
@@ -63,8 +97,7 @@ if [ "$action" == "edit-tags" ]; then
     selection=$(exiv2 -Pt -g Iptc.Application2.Keywords $file | dmenu -l 10)
     if [ -n "$selection" ]; then
         exiv2 -M "del Iptc.Application2.Keywords" $file
-        while read keyword
-        do
+        while read keyword; do
             if [ "$selection" != "$keyword" ]; then
                 exiv2 -M "add Iptc.Application2.Keywords String $keyword" $file
             else
@@ -85,10 +118,8 @@ if [ "$action" == "show" ]; then
     exiv2 -Pt -g Iptc.Application2.Keywords $file > /tmp/._image_keywords.txt
     echo -n "$date = Comment: $comment, Keywords: "
     first=true
-    while read keyword
-    do
-        if [ $first == "false" ]
-        then
+    while read keyword; do
+        if [ $first == "false" ]; then
             echo -n ", "
         fi
         echo -n $keyword
