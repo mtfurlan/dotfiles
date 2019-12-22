@@ -1,20 +1,24 @@
 #!/bin/bash
 # sudo apt-get install dmenu exifprobe exiv2 feh
-# feh --scale-down --auto-zoom --action1 "feh-sorting.sh --from-feh dir %F" --action2 "feh-sorting.sh --from-feh rename %F" --info "feh-sorting.sh --from-feh show %F"
+# feh --scale-down --auto-zoom --recursive
+#tmp_dir=$(mktemp -d)
+tmp_dir="/tmp/feh" # keeping it static till cleanup exists
+mkdir -p "$tmp_dir/feh"
 # ~/.config/feh/keys
-#    render n
-#    next_img j Right space
-#    prev_img k Left BackSpace
-#
-#    remove     d   Delete
-#    delete   C-d C-Delete
-#
-#    toggle_actions   l
-#    toggle_filenames f
-#
-#    action_1 m
-#    action_2 r
+cat << EOF > "$tmp_dir/feh/keys"
+render n
+next_img j Right space
+prev_img k Left BackSpace
 
+remove     d   Delete
+delete   C-d C-Delete
+
+toggle_actions   l
+toggle_filenames f
+
+action_1 m
+action_2 r
+EOF
 
 help () {
     # if arguments, print them
@@ -51,7 +55,8 @@ done
 
 # if not called from feh, run feh and exit
 if [ "$fromFeh" = false ]; then
-    feh --scale-down --auto-zoom --action1 "$0 --from-feh dir %F" --action2 "$0 --from-feh rename %F" --info "$0 --from-feh show %F" "$@"
+    # pass XDG_CONFIG_HOME to a place that has the feh config for this script
+    XDG_CONFIG_HOME="$tmp_dir" feh --scale-down --auto-zoom --action1 "$0 --from-feh dir %F" --action2 "$0 --from-feh rename %F" --info "$0 --from-feh show %F" "$@"
     exit $?
 fi
 
@@ -116,6 +121,8 @@ if [ "$action" == "show" ]; then
     comment=$(exiv2 -Pt -g Exif.Photo.UserComment $file)
     date=$(exiv2 -Pt -g Exif.Image.DateTime $file)
     exiv2 -Pt -g Iptc.Application2.Keywords $file > /tmp/._image_keywords.txt
+
+    echo -e "help: toggle actions: l; toggle filenames: f; move: m; rename: r\n"
     echo -n "$date = Comment: $comment, Keywords: "
     first=true
     while read keyword; do
