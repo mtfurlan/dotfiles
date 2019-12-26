@@ -18,6 +18,15 @@ alias ix="curl -F 'f:1=<-' ix.io"
 alias qr='curl -F-=\<- qrenco.de'
 alias weather='curl wttr.in?c'
 
+alias whatismyip4='curl -4 ifconfig.co 2>/dev/null'
+alias whatismyip6='curl -6 ifconfig.co 2>/dev/null'
+whatismyip()
+{
+    ipv4=$(whatismyip4)
+    ipv6=$(whatismyip6)
+    echo -e "ipv4: $ipv4\nipv6: $ipv6"
+}
+
 alias duc="du --max-depth=1 -ha | sort -rh | sed 's/\.\///' | sed /^0/d"
 
 mkcd () { mkdir -p "$@" && cd "$@"; }
