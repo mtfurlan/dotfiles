@@ -18,6 +18,7 @@ toggle_filenames f
 
 action_1 m
 action_2 r
+action_3 s
 EOF
 
 help () {
@@ -27,8 +28,9 @@ help () {
     echo "Usage: $0 FILENAME..."
     echo "       $0 --from-feh ACTION FILENAME"
     echo "sort filenames"
-    echo "  -h, --help       display this help and exit"
-    echo "  --from-feh       script is being called from feh, do ACTION on FILENAME"
+    echo "  -h, --help                          display this help and exit"
+    echo "  -s, --slideshow-dir=SLIDESHOW_DIR   use this dir for slideshow operations"
+    echo "  --from-feh                          script is being called from feh, do ACTION on FILENAME"
 
     # if args, exit 1 else exit 0
     [ $# == 0 ] || exit 1
@@ -36,7 +38,7 @@ help () {
 }
 
 # getopt short options go together, long options have commas
-TEMP=`getopt -o h --long help,from-feh -n "$0" -- "$@"`
+TEMP=`getopt -o hs: --long help,from-feh,slideshow-dir: -n "$0" -- "$@"`
 if [ $? != 0 ] ; then
     echo "Something wrong with getopt" >&2
     exit 1
@@ -44,19 +46,23 @@ fi
 eval set -- "$TEMP"
 
 fromFeh=false
+slideshow_dir=""
 while true ; do
     case "$1" in
         -h|--help) help; exit 0; shift ;;
+        -s|--slideshow-dir) slideshow_dir=$2 ; shift 2 ;;
         --from-feh) fromFeh=true ; shift ;;
         --) shift ; break ;;
-        *) echo "Internal error, unexpected argument '$0'!" ; exit 1 ;;
+        *) echo "Internal error, unexpected argument '$1'!" ; exit 1 ;;
     esac
 done
+
+
 
 # if not called from feh, run feh and exit
 if [ "$fromFeh" = false ]; then
     # pass XDG_CONFIG_HOME to a place that has the feh config for this script
-    XDG_CONFIG_HOME="$tmp_dir" feh --scale-down --auto-zoom --action1 "$0 --from-feh dir %F" --action2 "$0 --from-feh rename %F" --info "$0 --from-feh show %F" "$@"
+    XDG_CONFIG_HOME="$tmp_dir" feh --scale-down --auto-zoom --action1 "$0 --from-feh dir %F" --action2 "$0 --from-feh rename %F" --action3 "$0 --slideshow-dir='$slideshow_dir' --from-feh add-slideshow %F" --info "$0 --from-feh info %F" "$@"
     exit $?
 fi
 
@@ -64,6 +70,24 @@ fi
 action=$1
 file=$2
 
+if [ "$action" == "add-slideshow" ]; then
+    if [ -z "$slideshow_dir" ]; then
+        echo "Can't move stuff to an unset directory" >/dev/stderr
+        exit 1
+    fi
+
+    if [ -d "$slideshow_dir" ]; then
+        # count is number of files in the dir
+        #assuming all files are XX-filename.ext
+        count=$(ls -1 "$slideshow_dir" | wc -l | xargs printf "%02d")
+        base=$(basename "$file")
+        cp "$file" "$slideshow_dir/$count-$base"
+    else
+        echo "slideshow dir '$slideshow_dir' is not a directory" >/dev/stderr
+        exit 1
+    fi
+
+fi
 if [ "$action" == "dir" ]; then
     TAG="$(find -type d -printf '%f\n' | dmenu -p "move file to dir")"
     if [ ! -e "$TAG" ]; then
@@ -117,12 +141,12 @@ if [ "$action" == "edit-tags" ]; then
     rm /tmp/._image_keywords.txt
 fi
 
-if [ "$action" == "show" ]; then
+if [ "$action" == "info" ]; then
     comment=$(exiv2 -Pt -g Exif.Photo.UserComment $file)
     date=$(exiv2 -Pt -g Exif.Image.DateTime $file)
     exiv2 -Pt -g Iptc.Application2.Keywords $file > /tmp/._image_keywords.txt
 
-    echo -e "help: toggle actions: l; toggle filenames: f; move: m; rename: r\n"
+    echo -e "help: toggle actions: l; toggle filenames: f; move: m; rename: r; s: add to slideshow\n"
     echo -n "$date = Comment: $comment, Keywords: "
     first=true
     while read keyword; do
