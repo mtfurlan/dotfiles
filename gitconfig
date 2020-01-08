@@ -62,7 +62,7 @@
 	today-all = !git llog --since='12am' --all --no-merges
 	yesterday-all = !git llog --since='yesterday 12am' --until='12am' --all --no-merges
 
-	up-log = !sh -c 'logstart=$(git rev-parse HEAD) && git up && echo "" && git --no-pager llog ${logstart}.. --stat'
+	uplog = !sh -c 'logstart=$(git rev-parse HEAD) && git up && echo "" && git --no-pager llog ${logstart}.. --stat'
 
 	# clean up after PR has been merged
 	prdone = !"sh -c 'branch=$(git rev-parse --abbrev-ref HEAD) && git co ${1-develop} && git up && if git ls-remote origin $branch | grep $branch >/dev/null; then echo \"$branch has remote-tracking, figure it out\"; false; else git branch -d $branch; fi'"
