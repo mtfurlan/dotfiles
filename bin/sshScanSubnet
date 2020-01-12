@@ -8,8 +8,8 @@ IFS=$'\n\t'
 # pip install yq
 
 command -v jq >/dev/null 2>&1 || { echo >&2 "I require jq but it's not installed.  Aborting."; exit 1; }
-command -v xq >/dev/null 2>&1 || { echo >&2 "I require jq but it's not installed.  Aborting."; exit 1; }
-command -v avahi-resolve-address >/dev/null 2>&1 || { echo >&2 "I require jq but it's not installed.  Aborting."; exit 1; }
+command -v xq >/dev/null 2>&1 || { echo >&2 "I require xq but it's not installed.  Aborting."; exit 1; }
+command -v avahi-resolve-address >/dev/null 2>&1 || { echo >&2 "I require avahi-resolve-address but it's not installed install 'avahi-utils'.  Aborting."; exit 1; }
 
 port=22
 
