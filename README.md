@@ -11,3 +11,8 @@ Random tools
 Thinkpad-specific
 * https://github.com/teleshoes/tpacpi-bat
 * https://github.com/morgwai/tpbat-utils-acpi
+
+Clock date format
+```
+%F | %a %b | %T
+```
