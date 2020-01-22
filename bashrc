@@ -12,6 +12,8 @@ export EDITOR=vim
 export VISUAL=vim
 export PATH=~/bin:~/local/bin:~/.local/bin:/sbin:/usr/sbin:/usr/local/sbin:$PATH
 
+# disable history expansion, ecclamation marks are useful sometimes
+set +H
 
 # don't put duplicate lines or lines starting with space in the history.
 # See bash(1) for more options
