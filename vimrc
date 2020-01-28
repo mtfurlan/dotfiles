@@ -119,6 +119,7 @@ set t_Co=256
 
 " Set search hilight and colour
 set hlsearch
+set incsearch
 hi Search cterm=NONE ctermfg=grey ctermbg=blue
 
 " show trailing whitespace
