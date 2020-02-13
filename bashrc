@@ -54,7 +54,7 @@ if [ -r ~/.fzf.bash ]; then
 fi
 
 # diff so fancy
-if which diff-so-fancy > /dev/null; then
+if builtin type -P "diff-so-fancy" &> /dev/null; then
     export GIT_PAGER="diff-so-fancy | less --tabs=4 -RFX"
 else
     export GIT_PAGER="less -R"
@@ -62,7 +62,7 @@ fi
 
 # https://github.com/nvbn/thefuck
 # defines 'fuck' as a command to fix the last command
-if which thefuck >/dev/null; then
+if builtin type -P "thefuck" &> /dev/null; then
     eval $(thefuck --alias)
 fi
 
