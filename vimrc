@@ -27,6 +27,8 @@ Plugin 'AndrewRadev/linediff.vim'
 Plugin 'chrisbra/csv.vim'
 Plugin 'posva/vim-vue'
 Plugin 'google/vim-searchindex'
+Plugin 'udalov/kotlin-vim'
+Plugin 'hashivim/vim-terraform'
 
 call vundle#end()
 filetype plugin indent on
@@ -70,7 +72,7 @@ let g:airline#extensions#tabline#buffer_nr_show = 1
 set hidden
 
 " ===vim markdown preview settings===
-let g:livedown_browser = "chromium"
+let g:livedown_browser = "google-chrome"
 map <C-P> :LivedownToggle<CR>
 
 " === Tmuxline ===

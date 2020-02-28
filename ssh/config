@@ -52,11 +52,25 @@ Host boethiah
     Hostname 10.4.4.198
     IdentityFile ~/.ssh/boethiah_rsa
     User mark
-Host miso
-    Hostname 10.4.4.3
+Host ramen
+    Hostname 10.4.4.7
+    User mark
+    IdentityFile ~/.ssh/ramen_rsa
+Host miso miso.local
+    Hostname miso.local
     User mark
     IdentityFile ~/.ssh/miso_rsa
+
 Host personalAWS
-    Hostname 3.89.90.162
+    Hostname 34.236.71.4
     IdentityFile ~/.ssh/personalAWS.pem
     User admin
+
+Host jenkinsAWS
+    Hostname ec2-18-221-70-239.us-east-2.compute.amazonaws.com
+    IdentityFile ~/.ssh/jenkins-aws_rsa
+    User mark
+Host jenkinsAWS-admin
+    Hostname ec2-18-221-70-239.us-east-2.compute.amazonaws.com
+    IdentityFile ~/.ssh/jenkins-aws.pem
+    User ec2-user

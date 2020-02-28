@@ -10,9 +10,7 @@ help() {
   echo "       -s, --symlink"
   echo "                symlink rc files"
   echo "           --install-tools"
-  echo "                install tools; "
-  echo "           --update-tools; will auto-install tools if used with -n"
-  echo "                only update local tools, don't run full setup"
+  echo "                install extra tools like thefuck; gh; fpp;"
   echo "           --guest"
   echo "                don't put personal files in"
   echo "       -g, --checkGithub"
@@ -38,7 +36,6 @@ eval set -- "$TEMP"
 
 new=false
 symlink=false
-updateTools=false
 installTools=false
 checkGithub=false
 guest=false
@@ -46,7 +43,6 @@ while true ; do
     case "$1" in
         -n|--new) new=true ; shift ;;
         -s|--symlink) symlink=true ; shift ;;
-        --update-tools) updateTools=true ; shift ;;
         --install-tools) installTools=true ; shift ;;
         --guest) guest=true ; shift ;;
         -g|--checkGithub) checkGithub=true ; shift ;;
@@ -111,24 +107,72 @@ get_github_latest_release_file() {
   echo "$1/releases/download/$(get_github_latest_release $1)/$2"
 }
 
-update_tools() {
+installDebGH() {
+  package=$1
+  repo=$2
+  debString=$3
 
-  batVersion=$(curl -s https://github.com/sharkdp/bat/releases/latest | sed 's/.*releases\/tag\/v\([0-9.]*\)">redirected.*/\1/')
-  batInstalledVersion=$(dpkg -s bat 2>/dev/null | grep Version | sed 's/Version: //') || true
+  echo "installing or updating $package from github/$repo"
 
-  if [ "$batInstalledVersion" != "$batVersion" ]; then
-    echo "VERSION MISMATCH: bat version: $batVersion, installedVersion: $batInstalledVersion"
-    if [ "$(uname -m)" == "x86_64" ]; then
-      wget -q -O "/tmp/bat_${batVersion}_amd64.deb" "https://github.com/sharkdp/bat/releases/download/v$batVersion/bat_${batVersion}_amd64.deb"
-      sudo dpkg -i "/tmp/bat_${batVersion}_amd64.deb"
-    else
-      echo "can't install bat for this arch, fix setup script"
-    fi
+  version=$(curl -s "https://github.com/$repo/releases/latest" | sed 's/.*releases\/tag\/v\([0-9.]*\)">redirected.*/\1/')
+  installedVersion=$(dpkg -s $package 2>/dev/null | grep Version | sed 's/Version: //') || true
+
+  if [ "$installedVersion" != "$version" ]; then
+    echo "VERSION MISMATCH: $package version: $version, installedVersion: $installedVersion"
+
+    #check arch
+    case "$(uname -m)" in
+      "x86_64")
+        arch="amd64" ;;
+      *)
+        echo "can't install $package for this arch($(uname -m)), fix setup script"
+        return 1
+        ;;
+    esac
+
+    #actually install
+    deb=$(echo $debString | PKG="$package" VER="$version" ARCH="amd64" envsubst '${PKG} ${VER} ${ARCH}')
+
+    wget -q -O "/tmp/$deb" "https://github.com/$repo/releases/download/v$version/$deb"
+    echo "installing $deb"
+    sudo dpkg -i "/tmp/$deb"
+  fi
+}
+
+# clone or pull a repo to a path
+# returns 0 if cloned, 1 if updated
+cloneAndPull() {
+  repo=$1
+  dir=$2
+
+  if [ ! -d "$dir" ]; then
+    echo "cloning $repo to $dir"
+    git clone --depth 1 "$repo" "$dir" >/dev/null
+    return 0
+  else
+    echo "pulling $repo in $dir"
+    pushd "$dir" >/dev/null
+    git pull >/dev/null
+    popd >/dev/null
+  fi
+  return 1
+}
+
+install_tools() {
+  sudo apt-get install python3-dev python3-pip python3-setuptools jq -y
+  sudo pip3 install thefuck yq
+
+  installDebGH bat 'sharkdp/bat' '${PKG}_${VER}_${ARCH}.deb'
+  installDebGH gh 'cli/cli' '${PKG}_${VER}_linux_${ARCH}.deb'
+
+  if cloneAndPull https://github.com/junegunn/fzf.git ~/.fzf; then
+    ~/.fzf/install --completion --key-bindings --no-update-rc
   fi
 
-  pushd ~/.fzf
-  git pull
-  popd
+  if cloneAndPull https://github.com/mtfurlan/rpisetup.git ~/src/rpisetup; then
+    mkdir -p ~/.local/bin
+    ln -s ~/src/rpisetup/rpisetup ~/.local/bin/rpisetup
+  fi
 
   mkdir -p ~/.local/bin
   wget -q -O ~/.local/bin/up $(get_github_latest_release_file https://github.com/akavel/up up)
@@ -136,31 +180,11 @@ update_tools() {
   wget -q -O ~/.local/bin/diff-so-fancy https://raw.githubusercontent.com/so-fancy/diff-so-fancy/master/third_party/build_fatpack/diff-so-fancy
   chmod +x ~/.local/bin/diff-so-fancy
 
-  pushd ~/src/PathPicker/debian
-  git pull
+  cloneAndPull https://github.com/facebook/PathPicker.git ~/src/PathPicker || true
+  pushd ~/src/PathPicker/debian >/dev/null
   ./package.sh
   sudo dpkg -i ../fpp_*.deb
-  popd
-
-  pushd ~/src/rpisetup
-  git pull
-  popd
-}
-
-install_tools() {
-  sudo apt-get install python3-dev python3-pip python3-setuptools jq -y
-  sudo pip3 install thefuck yq
-
-  git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf || true
-  ~/.fzf/install --completion --key-bindings --no-update-rc
-
-  git clone https://github.com/facebook/PathPicker.git ~/src/PathPicker || true
-
-  git clone https://github.com/mtfurlan/rpisetup.git ~/src/rpisetup || true
-  mkdir -p ~/.local/bin || true
-  ln -s ~/src/rpisetup/rpisetup ~/.local/bin/rpisetup || true
-
-  update_tools
+  popd >/dev/null
 }
 
 
@@ -195,10 +219,13 @@ check_github() {
 }
 
 ask_install_tools() {
-  read -r -p "install random tools(thefuck, yq, fzf, up)? [y/N] " response
+  if [ "$installTools" = true ]; then
+    return
+  fi
+  read -r -p "install extra tools(thefuck, yq, fzf, up)? [y/N] " response
   case "$response" in
     [yY][eE][sS]|[yY])
-      install_tools
+      installTools=true
       ;;
   esac
 }
@@ -250,12 +277,7 @@ if [ "$new" = true ]; then
   symlink=true
   checkGithub=true
 
-  if [ "$installTools" = true ]; then
-    install_tools
-    installTools=false
-  else
-    ask_install_tools
-  fi
+  ask_install_tools
 
   echo "if it's a thinkpad, do battery management setup"
   echo "    tpacpi-bat: https://github.com/teleshoes/tpacpi-bat"
@@ -265,9 +287,6 @@ fi
 
 if [ "$installTools" = true ]; then
   install_tools
-fi
-if [ "$updateTools" = true ]; then
-  update_tools
 fi
 if [ "$symlink" = true ]; then
   symlinks
