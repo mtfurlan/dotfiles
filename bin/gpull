@@ -36,5 +36,5 @@ fi
 
 # print the URL
 url="https://$provider/$repo/$prURL"
-echo $url
-#xdg-open $url
+echo "$url"
+xdg-open "$url"

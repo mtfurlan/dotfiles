@@ -68,3 +68,14 @@ extract () {
 function dsf {
     git diff --no-index "$@"
 }
+
+function startRelease {
+    curBranch=$(git rev-parse --abbrev-ref HEAD)
+    if [[ "$curBranch" != "develop" ]]; then
+        echo "you aren't on develop. You should be."
+        exit 1
+    fi
+    newVersion=$(standard-version --dry-run | sed -n 's/.*tagging release //p')
+    releaseBranch="release/${newVersion}"
+    git checkout -b $releaseBranch
+}

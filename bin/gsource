@@ -104,4 +104,6 @@ head=${head:-$(git rev-parse HEAD)}
 #echo "file: $file"
 
 # print the URL
-echo "https://$provider/$repo/$urlThing/$head/$file$lineStr"
+url="https://$provider/$repo/$urlThing/$head/$file$lineStr"
+echo "$url"
+xdg-open "$url"

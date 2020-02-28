@@ -44,7 +44,7 @@
 	# interactive rebase
 	ir = !sh -c 'git rebase -i origin/${1-master}' -
 
-	up = !git pull --rebase --prune --autostash --recurse-submodules
+	upQuiet = !git pull --rebase --prune --autostash --recurse-submodules
 
 	llog = !git log --pretty=format:'%Cgreen(%ci)%Creset %Cred%h%Creset %<(20,trunc)%C(bold blue)%an%Creset  %s %C(yellow)%d%Creset ' --abbrev-commit
 	glog = !git log --graph --all --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative
@@ -62,10 +62,10 @@
 	today-all = !git llog --since='12am' --all --no-merges
 	yesterday-all = !git llog --since='yesterday 12am' --until='12am' --all --no-merges
 
-	uplog = !sh -c 'logstart=$(git rev-parse HEAD) && git up && echo "" && git --no-pager llog ${logstart}.. --stat'
+	up = !sh -c 'logstart=$(git rev-parse HEAD) && git upQuiet && echo "" && git --no-pager llog ${logstart}.. --stat'
 
 	# clean up after PR has been merged
-	prdone = !"sh -c 'branch=$(git rev-parse --abbrev-ref HEAD) && git co ${1-develop} && git up && if git ls-remote origin $branch | grep $branch >/dev/null; then echo \"$branch has remote-tracking, figure it out\"; false; else git branch -d $branch; fi'"
+	prdone = !"sh -c 'branch=$(git rev-parse --abbrev-ref HEAD) && git co ${1-develop} && git upQuiet && if git ls-remote origin $branch | grep $branch >/dev/null; then echo \"$branch has remote-tracking, figure it out\"; false; else git branch -d $branch; fi'"
 
 	# `git clean-merged`
 	# clean up merged branches
