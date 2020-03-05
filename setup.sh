@@ -112,6 +112,7 @@ installDebGH() {
   repo=$2
   debString=$3
 
+  echo
   echo "installing or updating $package from github/$repo"
 
   version=$(curl -s "https://github.com/$repo/releases/latest" | sed 's/.*releases\/tag\/v\([0-9.]*\)">redirected.*/\1/')
@@ -139,23 +140,29 @@ installDebGH() {
   fi
 }
 
-# clone or pull a repo to a path
-# returns 0 if cloned, 1 if updated
 cloneAndPull() {
   repo=$1
   dir=$2
 
+  echo
+
   if [ ! -d "$dir" ]; then
     echo "cloning $repo to $dir"
     git clone --depth 1 "$repo" "$dir" >/dev/null
-    return 0
   else
-    echo "pulling $repo in $dir"
+    echo "updating git $dir - $repo"
     pushd "$dir" >/dev/null
-    git pull >/dev/null
+    latestTag=$(git describe --tags `git rev-list --tags --max-count=1` 2>/dev/null || true)
+    if [ ! -z "$latestTag" ]; then
+      echo "checking out '$latestTag'"
+      git checkout "$latestTag" &>/dev/null
+    else
+      curBranch=$(git rev-parse --abbrev-ref HEAD)
+      echo "pulling '$curBranch'"
+      git pull >/dev/null
+    fi
     popd >/dev/null
   fi
-  return 1
 }
 
 install_tools() {
@@ -165,14 +172,12 @@ install_tools() {
   installDebGH bat 'sharkdp/bat' '${PKG}_${VER}_${ARCH}.deb'
   installDebGH gh 'cli/cli' '${PKG}_${VER}_linux_${ARCH}.deb'
 
-  if cloneAndPull https://github.com/junegunn/fzf.git ~/.fzf; then
-    ~/.fzf/install --completion --key-bindings --no-update-rc
-  fi
+  cloneAndPull https://github.com/junegunn/fzf.git ~/src/fzf
+  ~/src/fzf/install --completion --key-bindings --no-update-rc >/dev/null
 
-  if cloneAndPull https://github.com/mtfurlan/rpisetup.git ~/src/rpisetup; then
-    mkdir -p ~/.local/bin
-    ln -s ~/src/rpisetup/rpisetup ~/.local/bin/rpisetup
-  fi
+  cloneAndPull https://github.com/mtfurlan/rpisetup.git ~/src/rpisetup
+  mkdir -p ~/.local/bin
+  ln -s ~/src/rpisetup/rpisetup ~/.local/bin/rpisetup || true
 
   mkdir -p ~/.local/bin
   wget -q -O ~/.local/bin/up $(get_github_latest_release_file https://github.com/akavel/up up)
@@ -180,7 +185,7 @@ install_tools() {
   wget -q -O ~/.local/bin/diff-so-fancy https://raw.githubusercontent.com/so-fancy/diff-so-fancy/master/third_party/build_fatpack/diff-so-fancy
   chmod +x ~/.local/bin/diff-so-fancy
 
-  cloneAndPull https://github.com/facebook/PathPicker.git ~/src/PathPicker || true
+  cloneAndPull https://github.com/facebook/PathPicker.git ~/src/PathPicker
   pushd ~/src/PathPicker/debian >/dev/null
   ./package.sh
   sudo dpkg -i ../fpp_*.deb
