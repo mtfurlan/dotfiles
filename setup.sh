@@ -171,6 +171,7 @@ install_tools() {
 
   installDebGH bat 'sharkdp/bat' '${PKG}_${VER}_${ARCH}.deb'
   installDebGH gh 'cli/cli' '${PKG}_${VER}_linux_${ARCH}.deb'
+  gh completion > ~/.gh-completion
 
   cloneAndPull https://github.com/junegunn/fzf.git ~/src/fzf
   ~/src/fzf/install --completion --key-bindings --no-update-rc >/dev/null

@@ -53,6 +53,10 @@ if [ -r ~/.fzf.bash ]; then
     . ~/.fzf.bash
 fi
 
+if [ -r ~/.gh-completion ]; then
+    . ~/.gh-completion
+fi
+
 # diff so fancy
 if builtin type -P "diff-so-fancy" &> /dev/null; then
     export GIT_PAGER="diff-so-fancy | less --tabs=4 -RFX"
