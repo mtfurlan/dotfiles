@@ -88,7 +88,7 @@ function prdone {
             git branch -D $branch;
         else
             # else maybe it's a fast forward?
-            git branch -d branch
+            git branch -d $branch
         fi
     fi
 }
