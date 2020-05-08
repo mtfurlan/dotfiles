@@ -1,14 +1,22 @@
 # Dotfiles
 
 ## Random tools
-* https://github.com/kislyuk/yq
-* https://github.com/so-fancy/diff-so-fancy
-* https://github.com/sharkdp/bat
-* https://github.com/denilsonsa/prettyping
-* https://github.com/junegunn/fzf
-* https://github.com/akavel/up
-* https://github.com/nvbn/thefuck
-* https://github.com/bcicen/slackcat
+* tig: interactive git history viewer
+  * apt
+* dsf: better git diff
+  * https://github.com/so-fancy/diff-so-fancy
+* bat: pretty formatted cat
+  * https://github.com/sharkdp/bat
+* prettyping: A pretty ping
+  * https://github.com/denilsonsa/prettyping
+* fzf: fuzzy search, does bash history
+  * https://github.com/junegunn/fzf
+* up: interactively run commands on piped input
+  * https://github.com/akavel/up
+* fuck: fix whatever it was you fucked up with the last command
+  * https://github.com/nvbn/thefuck
+* slackcat: send files or test to slack from the command line
+  * https://github.com/bcicen/slackcat
 
 ## Thinkpad-specific
 * https://github.com/teleshoes/tpacpi-bat
