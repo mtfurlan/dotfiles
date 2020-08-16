@@ -17,7 +17,6 @@ Plugin 'christoomey/vim-tmux-navigator'
 Plugin 'shime/vim-livedown'
 Plugin 'scrooloose/syntastic'
 Plugin 'scrooloose/nerdtree'
-Plugin 'leafgarland/typescript-vim'
 Plugin 'editorconfig/editorconfig-vim'
 Plugin 'Xuyuanp/nerdtree-git-plugin'
 Plugin 'vimwiki/vimwiki'
@@ -25,10 +24,14 @@ Plugin 'airblade/vim-gitgutter'
 Plugin 'mileszs/ack.vim'
 Plugin 'AndrewRadev/linediff.vim'
 Plugin 'chrisbra/csv.vim'
-Plugin 'posva/vim-vue'
-Plugin 'google/vim-searchindex'
-Plugin 'udalov/kotlin-vim'
-Plugin 'hashivim/vim-terraform'
+let hostname = substitute(system('hostname'), '\n', '', '')
+if hostname == "boethiah"
+  Plugin 'posva/vim-vue'
+  Plugin 'udalov/kotlin-vim'
+  Plugin 'hashivim/vim-terraform'
+  Plugin 'google/vim-searchindex'
+  Plugin 'leafgarland/typescript-vim'
+endif
 
 call vundle#end()
 filetype plugin indent on
