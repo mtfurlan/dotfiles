@@ -1,0 +1,56 @@
+#!/bin/bash
+set -euo pipefail
+
+help () {
+# if arguments, print them
+    [ $# == 0 ] || echo $*
+
+    echo "Usage: $0 keyname username hostname"
+    echo "       $0 keyname username@hostname"
+    echo "       $0 keyname hostname"
+    echo "be warned, the arg parsing isn't very robust"
+
+    # if args, exit 1 else exit 0
+    [ $# == 0 ] || exit 1
+    exit 0
+}
+
+if [ "$#" -lt 2 ]; then
+    help "not enough args"
+fi
+
+name=$1
+
+if [ "$#" -eq 3 ]; then                 # $0 keyname username hostname
+    user=$2
+    hostname=$3
+elif [ "$2" == *"@"* ]; then            # $0 keyname username@hostname
+    user=$(echo $2 | cut -d'@' -f1)
+    hostname=$(echo $2 | cut -d'@' -f2)
+else                                    # $0 keyname hostname
+    user='mark'
+    hostname=$2
+fi
+
+
+keyfile=~/.ssh/${name}_ed25519
+
+echo "making key $keyfile for $user@$hostname"
+
+read -p "Press enter to continue"
+ssh-keygen -t ed25519 -N '' -f $keyfile
+
+cat >> ~/.ssh/config << EOF
+
+Host $name
+    Hostname $hostname
+    User $user
+    IdentityFile $keyfile
+EOF
+
+read -r -p "Try to install key with ssh-copy-id [y/N] " response
+case "$response" in
+  [yY][eE][sS]|[yY])
+    ssh-copy-id -i $keyfile $name
+    ;;
+esac
