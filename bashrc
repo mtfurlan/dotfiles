@@ -1,12 +1,13 @@
-#.bash_profile, executed by login shells
-#Also executed by .bashrc, so all shells really
-
 # If not running interactively, don't do anything
 # TODO: is this important?
 case $- in
     *i*) ;;
       *) return;;
 esac
+
+#enable/disable git info in PS1
+#override in localrc
+git_prompt=true
 
 export EDITOR=vim
 export VISUAL=vim
@@ -152,7 +153,13 @@ if [[ $colors -ge 8 ]]; then
     # VENV is a function that is either empty or the python virtualenv name
     myFancyPS1Start="${debian_chroot:+($debian_chroot)}$Red\${?##0}$Cya$VENV$Gre\u@$hostColor\h$sudoPS1:$Blu\w$None"
     myFancyPS1End="$None$ "
-    PROMPT_COMMAND='__git_ps1 "$myFancyPS1Start" "$myFancyPS1End"'
+    
+    if [ "$git_prompt" = true ]; then
+        PROMPT_COMMAND='__git_ps1 "$myFancyPS1Start" "$myFancyPS1End"'
+    else
+        PS1="$myFancyPS1Start$myFancyPS1End"
+        unset PROMPT_COMMAND
+    fi
 else
     PS1='${debian_chroot:+($debian_chroot)}$VENV\u@\h:\w\$ '
 fi
