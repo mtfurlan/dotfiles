@@ -209,7 +209,7 @@ ssh()
 {
     SSHAPP=$(which ssh)
     ARGS=$@
-    echo -en "\033]0;ssh $ARGS\007"
+    echo -en "\033]0;$ARGS\007"
     $SSHAPP $ARGS
     echo -en "\033]0;$(hostname)\007"
 }
