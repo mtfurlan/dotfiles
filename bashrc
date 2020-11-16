@@ -115,6 +115,11 @@ export GIT_PS1_SHOWUPSTREAM="auto"     # 'u='=no difference, 'u+1'=ahead by 1 co
 export GIT_PS1_STATESEPARATOR=" "
 export GIT_PS1_DESCRIBE_STYLE="describe"  # detached HEAD style:
 
+parse_git_branch() {
+  git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/ (\1)/'
+}
+
+
 
 if [[ $colors -ge 8 ]]; then
     if [[ $colors -ge 256 ]]; then
@@ -157,7 +162,7 @@ if [[ $colors -ge 8 ]]; then
     if [ "$git_prompt" = true ]; then
         PROMPT_COMMAND='__git_ps1 "$myFancyPS1Start" "$myFancyPS1End"'
     else
-        PS1="$myFancyPS1Start$myFancyPS1End"
+        PS1="$myFancyPS1Start\$(parse_git_branch)$myFancyPS1End"
         unset PROMPT_COMMAND
     fi
 else
