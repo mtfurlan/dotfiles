@@ -15,6 +15,7 @@ alias df='df -h'
 alias tmux='tmux -2'
 
 alias glog="git log --graph --all --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative"
+alias gpush="git push --force-with-lease"
 
 alias ix="curl -F 'f:1=<-' ix.io"
 alias qr='curl -F-=\<- qrenco.de'
@@ -80,6 +81,7 @@ function prdone {
     git upQuiet
     if git ls-remote origin $branch | grep $branch >/dev/null; then
         echo "$branch has remote-tracking, figure it out"
+        git co $branch
         false
     else
         # TODO: figure out how to check if all things from a branch are merged
