@@ -38,6 +38,15 @@ filetype plugin indent on
 
 let mapleader = ","
 
+
+" ================ Shortcuts ====================
+" edit this file
+:nnoremap <leader>ev :vsplit $MYVIMRC<cr>
+
+" re-source this file
+:nnoremap <leader>sv :source $MYVIMRC<cr>
+
+
 " https://github.com/skwp/dotfiles/blob/master/vimrc
 " ================ General Config ====================
 set backspace=indent,eol,start "Allow backspace in insert mode
