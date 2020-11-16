@@ -136,12 +136,21 @@ hi Search cterm=NONE ctermfg=grey ctermbg=blue
 augroup collumnLimit
   autocmd!
   autocmd BufEnter,WinEnter,FileType *
-        \ highlight CollumnLimit ctermbg=DarkGrey guibg=DarkGrey
-  let collumnLimit = 81 " feel free to customize
-  let pattern =
-        \ '\%<' . (collumnLimit+1) . 'v.\%>' . collumnLimit . 'v'
+        \ highlight CollumnLimitSoft ctermbg=DarkGrey guibg=DarkGrey
+  let softLimit = 80
+  let softPattern =
+        \ '\%<' . (softLimit+2) . 'v.\%>' . (softLimit+1) . 'v'
   autocmd BufEnter,WinEnter,FileType *
-        \ let w:m1=matchadd('CollumnLimit', pattern, -1)
+        \ let w:m1=matchadd('CollumnLimitSoft', softPattern, -1)
+
+
+  autocmd BufEnter,WinEnter,FileType *
+        \ highlight CollumnLimitHard ctermbg=DarkRed guibg=DarkRed
+  let hardLimit = 120
+  let hardPattern =
+        \ '\%<' . (hardLimit+2) . 'v.\%>' . (hardLimit+1) . 'v'
+  autocmd BufEnter,WinEnter,FileType *
+        \ let w:m1=matchadd('CollumnLimitHard', hardPattern, -1)
 augroup END
 
 
