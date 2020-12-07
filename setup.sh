@@ -11,6 +11,8 @@ help() {
   echo "                symlink rc files"
   echo "           --install-tools"
   echo "                install extra tools like thefuck; gh; fpp;"
+  echo "       -u, --update-tools"
+  echo "                update tools;"
   echo "           --guest"
   echo "                don't put personal files in"
   echo "       -g, --checkGithub"
@@ -27,7 +29,7 @@ fi
 
 
 # getopt short options go together, long options have commas
-TEMP=`getopt -o nsgh --long new,symlink,update-tools,install-tools,checkGithub,help,guest -n 'test.sh' -- "$@"`
+TEMP=`getopt -o nsghu --long new,symlink,update-tools,install-tools,checkGithub,help,guest -n 'test.sh' -- "$@"`
 if [ $? != 0 ] ; then
     echo "Something wrong with getopt" >&2
     exit 1
@@ -37,6 +39,7 @@ eval set -- "$TEMP"
 new=false
 symlink=false
 installTools=false
+updateTools=false
 checkGithub=false
 guest=false
 while true ; do
@@ -44,6 +47,7 @@ while true ; do
         -n|--new) new=true ; shift ;;
         -s|--symlink) symlink=true ; shift ;;
         --install-tools) installTools=true ; shift ;;
+        -u|--update-tools) updateTools=true ; shift ;;
         --guest) guest=true ; shift ;;
         -g|--checkGithub) checkGithub=true ; shift ;;
         -h|--help) help ; exit 0 ;;
@@ -165,9 +169,8 @@ cloneAndPull() {
   fi
 }
 
-install_tools() {
-  sudo apt-get install python3-dev python3-pip python3-setuptools jq -y
-  sudo pip3 install thefuck yq
+update_tools() {
+  sudo pip3 install --upgrade thefuck yq
 
   installDebGH bat 'sharkdp/bat' '${PKG}_${VER}_${ARCH}.deb'
   installDebGH gh 'cli/cli' '${PKG}_${VER}_linux_${ARCH}.deb'
@@ -178,19 +181,25 @@ install_tools() {
 
   cloneAndPull https://github.com/mtfurlan/rpisetup.git ~/src/rpisetup
   mkdir -p ~/.local/bin
-  ln -s ~/src/rpisetup/rpisetup ~/.local/bin/rpisetup || true
+  ln -s ~/src/rpisetup/rpisetup ~/.local/bin/rpisetup 2>/dev/null || true
 
   mkdir -p ~/.local/bin
   wget -q -O ~/.local/bin/up $(get_github_latest_release_file https://github.com/akavel/up up)
   chmod +x ~/.local/bin/up
   wget -q -O ~/.local/bin/diff-so-fancy https://raw.githubusercontent.com/so-fancy/diff-so-fancy/master/third_party/build_fatpack/diff-so-fancy
   chmod +x ~/.local/bin/diff-so-fancy
+}
+
+install_tools() {
+  sudo apt-get install python3-dev python3-pip python3-setuptools jq -y
 
   cloneAndPull https://github.com/facebook/PathPicker.git ~/src/PathPicker
   pushd ~/src/PathPicker/debian >/dev/null
   ./package.sh
   sudo dpkg -i ../fpp_*.deb
   popd >/dev/null
+
+  update_tools
 }
 
 
@@ -293,6 +302,9 @@ fi
 
 if [ "$installTools" = true ]; then
   install_tools
+fi
+if [ "$updateTools" = true ]; then
+  update_tools
 fi
 if [ "$symlink" = true ]; then
   symlinks
