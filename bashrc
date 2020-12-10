@@ -115,6 +115,11 @@ export GIT_PS1_SHOWUPSTREAM="auto"     # 'u='=no difference, 'u+1'=ahead by 1 co
 export GIT_PS1_STATESEPARATOR=" "
 export GIT_PS1_DESCRIBE_STYLE="describe"  # detached HEAD style:
 
+# This will limit the number of dirs to show in the PS1
+# tom@sanctum:/chroot/apache/usr/local/app-library/lib/App/Library/Class$ PROMPT_DIRTRIM=3
+# tom@sanctum:.../App/Library/Class$
+
+export PROMPT_DIRTRIM=5
 
 if [[ $colors -ge 8 ]]; then
     if [[ $colors -ge 256 ]]; then
