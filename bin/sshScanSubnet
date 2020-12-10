@@ -39,40 +39,29 @@ echo "scanning $subnet"
 
 sudo nmap -Pn -oX - -p$port $subnet > /tmp/nmapOutput
 
-stage2=$(cat /tmp/nmapOutput | xq -c '.nmaprun.host[] |  [(.address | if type=="array" then [.[0]."@addr", .[1]."@addr", .[1]."@vendor"] else [."@addr"] end), .ports.port.state."@state"]')
+hosts=$(cat /tmp/nmapOutput | xq -c '[.nmaprun.host[] |  select(.address | type == "array") | select(.ports.port.state."@state" == "open") | {ip: .address[] | select(."@addrtype" | contains("ipv4"))."@addr", mac: .address[] | select(."@addrtype" | contains("mac"))."@addr", vendor: .address[] | select(."@addrtype" | contains("mac"))."@vendor"}]')
 
-#echo -e "$stage2\n\n"
-hosts=$(echo "$stage2" | grep open | sed 's/["\[\]]*//g' | sed 's/,open$//' | sed 's/,/, /g')
-#set +e #read returns nonzero, is fine
-#read -r -d '' hosts << EOM
-#10.4.4.1,80:2A:A8:8F:44:33,Ubiquiti Networks
-#10.4.4.2,10:DD:B1:B3:EA:57,Apple
-#10.4.4.6,B8:27:EB:1D:D7:AA,Raspberry Pi Foundation
-#10.4.4.89,80:2A:A8:90:48:E5,Ubiquiti Networks
-#10.4.4.91,80:2A:A8:90:48:DA,Ubiquiti Networks
-#10.4.4.95,B8:27:EB:B8:FD:95,Raspberry Pi Foundation
-#10.4.4.96,B8:27:EB:B8:FD:95,Raspberry Pi Foundation
-#10.4.4.116,C4:8E:8F:F3:48:EF,Hon Hai Precision Ind.
-#10.4.4.137,D4:6E:0E:03:74:0B,Tp-link Technologies
-#10.4.4.172,B8:27:EB:7C:0F:E6,Raspberry Pi Foundation
-#10.4.4.190,B8:27:EB:4C:4A:E6,Raspberry Pi Foundation
-#10.4.4.219,78:2B:CB:8A:79:08,Dell
-#10.4.4.198
-#10.4.4.221
-#EOM
-#set -e
+#hosts looks like
+#[
+#    {"ip":"192.168.1.1","mac":"80:2A:A8:4F:8F:E1","vendor":"Ubiquiti Networks"},
+#    {"ip":"192.168.1.2","mac":"E0:63:DA:2E:32:9E","vendor":null}
+#]
 
-#echo "$hosts"
-#echo -e "\n\n"
-
-count=$(echo "$hosts" | wc -l);
-echo "resolving hostnames for $count hosts"
 #get mdns names
+count=$(echo "$hosts" | jq length);
+echo "resolving hostnames for $count hosts"
+resolved=$(avahi-resolve-address $(echo "$hosts" | jq  -r '.[] | .ip') 2>/dev/null)
+# resolved looks like
+#192.168.1.4     pho.local
+
 while read line ; do
     #line is "ip      name"
-    #not every host is guarenteed a name
     ip=$(echo $line | cut -d' ' -f1)
     hostname=$(echo $line | cut -d' ' -f2)
-    hosts="${hosts/$ip/$ip, $hostname}"
-done <<< "$(avahi-resolve-address $(echo "$hosts" | cut -d, -f1) 2>/dev/null)"
-echo "$hosts" | perl -pe 's/^([^,]*),(?=[^,]*,[^,]*$)/\1, ,/' | column -t -s,
+    #echo "$ip: $hostname"
+    #jq can append to stuff!
+    hosts=$(echo "$hosts" | jq --arg IP "$ip" --arg HOST "$hostname" '[.[] | select(.ip == $IP) += {hostname: $HOST}]')
+done <<< "$resolved"
+
+# format as TSV, tell column to *only* work on tabs and don't merge empty values
+echo "$hosts" | jq -r '(["IP", "HOSTANME", "MAC", "VENDOR"]), (.[] | [.ip, .hostname, .mac, .vendor]) | @tsv' | column -nt -s $'\t'
