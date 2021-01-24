@@ -114,9 +114,11 @@ let g:syntastic_javascript_checkers=['eslint']
 if executable('node_modules/.bin/eslint')
   let b:syntastic_javascript_eslint_exec = 'node_modules/.bin/eslint'
 endif
-let g:syntastic_mode_map = { 'mode': 'passive' }
 
-let g:linuxsty_patterns = [ ]
+let g:syntastic_mode_map = {
+    \ "mode": "passive",
+    \ "active_filetypes": ["sh"],
+    \ "passive_filetypes": [] }
 
 " ===Nerdtree binding===
 map <C-n> :NERDTreeToggle<CR>
@@ -133,7 +135,7 @@ set t_Co=256
 " Set search hilight and colour
 set hlsearch
 set incsearch
-hi Search cterm=NONE ctermfg=grey ctermbg=blue
+hi Search cterm=NONE ctermfg=black ctermbg=blue
 
 " show trailing whitespace
 :highlight ExtraWhitespace ctermbg=red guibg=red
