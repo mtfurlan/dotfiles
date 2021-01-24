@@ -1,6 +1,6 @@
 #!/bin/bash
 set -euo pipefail
-cd $(dirname "$0")
+cd "$(dirname "$0")"
 
 help() {
   echo "Usage: $0 [OPTION]"
@@ -29,7 +29,8 @@ fi
 
 
 # getopt short options go together, long options have commas
-TEMP=`getopt -o nsghu --long new,symlink,update-tools,install-tools,checkGithub,help,guest -n 'test.sh' -- "$@"`
+TEMP=$(getopt -o nsghu --long new,symlink,update-tools,install-tools,checkGithub,help,guest -n 'test.sh' -- "$@")
+# shellcheck disable=SC2181
 if [ $? != 0 ] ; then
     echo "Something wrong with getopt" >&2
     exit 1
@@ -108,6 +109,7 @@ get_github_latest_release() {
   curl -s "$1/releases/latest" | sed 's/.*href=".*tag.\(.*\)">redirected.*/\1/'
 }
 get_github_latest_release_file() {
+  # shellcheck disable=SC2086
   echo "$1/releases/download/$(get_github_latest_release $1)/$2"
 }
 
@@ -120,7 +122,7 @@ installDebGH() {
   echo "installing or updating $package from github/$repo"
 
   version=$(curl -s "https://github.com/$repo/releases/latest" | sed 's/.*releases\/tag\/v\([0-9.]*\)">redirected.*/\1/')
-  installedVersion=$(dpkg -s $package 2>/dev/null | grep Version | sed 's/Version: //') || true
+  installedVersion=$(dpkg -s "$package" 2>/dev/null | grep Version | sed 's/Version: //') || true
 
   if [ "$installedVersion" != "$version" ]; then
     echo "VERSION MISMATCH: $package version: $version, installedVersion: $installedVersion"
@@ -136,7 +138,8 @@ installDebGH() {
     esac
 
     #actually install
-    deb=$(echo $debString | PKG="$package" VER="$version" ARCH="amd64" envsubst '${PKG} ${VER} ${ARCH}')
+    # shellcheck disable=SC2016
+    deb=$(echo "$debString" | PKG="$package" VER="$version" ARCH="$arch" envsubst '${PKG} ${VER} ${ARCH}')
 
     wget -q -O "/tmp/$deb" "https://github.com/$repo/releases/download/v$version/$deb"
     echo "installing $deb"
@@ -156,7 +159,8 @@ cloneAndPull() {
   else
     echo "updating git $dir - $repo"
     pushd "$dir" >/dev/null
-    latestTag=$(git describe --tags `git rev-list --tags --max-count=1` 2>/dev/null || true)
+    # shellcheck disable=SC2046
+    latestTag="$(git describe --tags $(git rev-list --tags --max-count=1) 2>/dev/null || true)"
     if [ ! -z "$latestTag" ]; then
       echo "checking out '$latestTag'"
       git checkout "$latestTag" &>/dev/null
@@ -172,7 +176,9 @@ cloneAndPull() {
 update_tools() {
   sudo pip3 install --upgrade thefuck yq
 
+  # shellcheck disable=SC2016
   installDebGH bat 'sharkdp/bat' '${PKG}_${VER}_${ARCH}.deb'
+  # shellcheck disable=SC2016
   installDebGH gh 'cli/cli' '${PKG}_${VER}_linux_${ARCH}.deb'
   gh completion > ~/.gh-completion
 
@@ -184,7 +190,7 @@ update_tools() {
   ln -s ~/src/rpisetup/rpisetup ~/.local/bin/rpisetup 2>/dev/null || true
 
   mkdir -p ~/.local/bin
-  wget -q -O ~/.local/bin/up $(get_github_latest_release_file https://github.com/akavel/up up)
+  wget -q -O ~/.local/bin/up "$(get_github_latest_release_file https://github.com/akavel/up up)"
   chmod +x ~/.local/bin/up
   wget -q -O ~/.local/bin/diff-so-fancy https://raw.githubusercontent.com/so-fancy/diff-so-fancy/master/third_party/build_fatpack/diff-so-fancy
   chmod +x ~/.local/bin/diff-so-fancy
@@ -206,7 +212,7 @@ install_tools() {
 new_computer() {
   echo "updating and installing things from apt"
 
-  if [ -x "$(which apt-get)" ] ; then
+  if command -v apt-get >/dev/null ; then
     if ! grep --quiet non-free /etc/apt/sources.list; then
       echo "/etc/apt/sources.list doesn't have nonfree"
       echo "exit when you're happy"
