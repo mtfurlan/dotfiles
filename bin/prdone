@@ -1,0 +1,36 @@
+#!/bin/bash
+set -euo pipefail
+
+usage() {
+  cat <<EOF
+Usage: $(basename "${BASH_SOURCE[0]}") [-h] [target branch]
+Try to delete current branch if it's merged into target("develop" is default) and remote is gone.
+
+-h, --help      Print this help and exit
+EOF
+  exit
+}
+
+if [[ "$*" == *"-h"* ]]; then
+    usage
+fi
+
+
+branch=$(git rev-parse --abbrev-ref HEAD)
+target="${1-develop}"
+git co "$target"
+git upQuiet
+if git ls-remote origin "$branch" | grep "$branch" >/dev/null; then
+    echo "$branch has remote-tracking, figure it out"
+    git co "$branch"
+    false
+else
+    # TODO: figure out how to check if all things from a branch are merged
+    if git diff --quiet "$branch" ; then
+        # if no difference, delete hard
+        git branch -D "$branch";
+    else
+        # else maybe it's a fast forward?
+        git branch -d "$branch"
+    fi
+fi
