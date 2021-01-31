@@ -209,6 +209,13 @@ autocmd BufNewFile,BufRead *.mjs set filetype=javascript
 let g:markdown_syntax_conceal = 0
 let g:vimwiki_conceallevel=0
 
+command FixTab call FixTabFun()
+fun! FixTabFun()
+  set tabstop=4
+  set shiftwidth=4
+  set expandtab
+endfun
+
 " auto remove whitespace
 " http://stackoverflow.com/a/1618401/2423187
 fun! StripTrailingWhitespaces()
