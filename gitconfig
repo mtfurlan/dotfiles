@@ -65,11 +65,5 @@
 
 	up = !sh -c 'logstart=$(git rev-parse HEAD) && git upQuiet && echo "" && git --no-pager llog ${logstart}.. --stat'
 
-	# clean up after PR has been merged
-	prdone = !"bash -c '. ~/.aliasrc && prdone'"
-
-	# `git clean-merged`
-	# clean up merged branches
-	#clean-merged = "!git branch --merged | grep -v '\\^\\*\\|master' | xargs -n 1 git branch -d"
 [pull]
 	ff = only
