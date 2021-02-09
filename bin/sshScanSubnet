@@ -1,45 +1,73 @@
-#!/bin/bash
-set -euo pipefail
-IFS=$'\n\t'
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+# shellcheck disable=SC2120
+usage() {
+  cat <<EOF
+Usage: $(basename "${BASH_SOURCE[0]}") [OPTION]... [TARGET SPECIFICATION]
+scan a subnet (or nmap TARGET SPECIFICATION) for all hosts responding to a port
+Available options:
+    -h, --help      Print this help and exit
+    -p, --port=PORT Use PORT instead of 22
+EOF
+  exit "${1-0}" #default exit status 0
+}
+
+msg() {
+	echo >&2 -e "${1-}"
+}
+
+die() {
+	local msg=$1
+	local code=${2-1} # default exit status 1
+	msg "$msg"
+	exit "$code"
+}
+
 
 #requires: yq and avahi-resolve
 # yq comes with xq which is jq for xml
 # https://github.com/kislyuk/yq
 # pip install yq
 
-command -v jq >/dev/null 2>&1 || { echo >&2 "I require jq but it's not installed.  Aborting."; exit 1; }
-command -v xq >/dev/null 2>&1 || { echo >&2 "I require xq but it's not installed.  Aborting."; exit 1; }
-command -v avahi-resolve-address >/dev/null 2>&1 || { echo >&2 "I require avahi-resolve-address but it's not installed install 'avahi-utils'.  Aborting."; exit 1; }
+command -v jq >/dev/null 2>&1 || die "I require jq but it's not installed."
+command -v xq >/dev/null 2>&1 || die "I require xq but it's not installed."
+command -v avahi-resolve-address >/dev/null 2>&1 || die "I require avahi-resolve-address; install 'avahi-utils'."
+
+
+# getopt short options go together, long options have commas
+TEMP=$(getopt -o hp: --long help,port: -n "$0" -- "$@")
+#shellcheck disable=SC2181
+if [ $? != 0 ] ; then
+	die "something wrong with getopt"
+fi
+eval set -- "$TEMP"
 
 port=22
+while true ; do
+    case "$1" in
+        -h|--help) usage ; shift ;;
+        -p|--port) port=$2 ; shift 2 ;;
+        --) shift ; break ;;
+        *) die "issue parsing args, unexpected argument '$0'!" ;;
+    esac
+done
 
-show_help () {
-    echo "Usage: sshScanSubnet {target specification}"
-    echo "    target specification: whatever is valid for nmap"
-}
-
-firstArg=${1:-}
-if [[ $firstArg == "-h" ]] || [[ $firstArg == "--help" ]]; then
-    show_help
-    exit 0
-fi
-
-if [ $# -eq 0 ]; then
-    #no arguments
+if [ $# -gt 0 ]; then
+    subnet=$1
+else
+	#shellcheck disable=SC1091
     source sind.sh
 
-    IFS=$'\r\n' GLOBIGNORE='*' command eval  'subnets=($(ip -o -f inet addr show | awk "/scope global/ {print \$2 \" \" \$4}" | column -t))'
+    mapfile -t subnets < <(ip -o -f inet addr show | awk "/scope global/ {print \$2 \" \" \$4}" | column -t)
     subnetChoice=$(sind "Choose one" "${subnets[@]}")
     subnet=$(echo "${subnets[$subnetChoice]}" | awk '{print $2}')
-else
-    subnet=$firstArg
 fi
 
-echo "scanning $subnet"
+echo "scanning for port $port in $subnet"
 
-sudo nmap -Pn -oX - -p$port $subnet > /tmp/nmapOutput
 
-hosts=$(cat /tmp/nmapOutput | xq -c '[.nmaprun.host[] |  select(.address | type == "array") | select(.ports.port.state."@state" == "open") | {ip: .address[] | select(."@addrtype" | contains("ipv4"))."@addr", mac: .address[] | select(."@addrtype" | contains("mac"))."@addr", vendor: .address[] | select(."@addrtype" | contains("mac"))."@vendor"}]')
+hosts=$(sudo nmap -Pn -oX - -p"$port" "$subnet" | xq -c '[.nmaprun.host[] |  select(.address | type == "array") | select(.ports.port.state."@state" == "open") | {ip: .address[] | select(."@addrtype" | contains("ipv4"))."@addr", mac: .address[] | select(."@addrtype" | contains("mac"))."@addr", vendor: .address[] | select(."@addrtype" | contains("mac"))."@vendor"}]')
 
 #hosts looks like
 #[
@@ -49,16 +77,16 @@ hosts=$(cat /tmp/nmapOutput | xq -c '[.nmaprun.host[] |  select(.address | type 
 
 #get mdns names
 count=$(echo "$hosts" | jq length);
-echo "resolving hostnames for $count hosts"
-resolved=$(avahi-resolve-address $(echo "$hosts" | jq  -r '.[] | .ip') 2>/dev/null)
+msg "resolving hostnames for $count hosts"
+resolved=$(avahi-resolve-address "$(echo "$hosts" | jq  -r '.[] | .ip')" 2>/dev/null)
 # resolved looks like
 #192.168.1.4     pho.local
 
-while read line ; do
+while read -r line ; do
     #line is "ip      name"
-    ip=$(echo $line | cut -d' ' -f1)
-    hostname=$(echo $line | cut -d' ' -f2)
-    #echo "$ip: $hostname"
+    ip=$(echo "$line" | cut -d' ' -f1)
+    hostname=$(echo "$line" | cut -d' ' -f2)
+    #msg "$ip: $hostname"
     #jq can append to stuff!
     hosts=$(echo "$hosts" | jq --arg IP "$ip" --arg HOST "$hostname" '[.[] | select(.ip == $IP) += {hostname: $HOST}]')
 done <<< "$resolved"
