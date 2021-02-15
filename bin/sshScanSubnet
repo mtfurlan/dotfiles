@@ -3,43 +3,44 @@ set -Eeuo pipefail
 
 # shellcheck disable=SC2120
 usage() {
-  cat <<EOF
+    cat <<EOF
 Usage: $(basename "${BASH_SOURCE[0]}") [OPTION]... [TARGET SPECIFICATION]
 scan a subnet (or nmap TARGET SPECIFICATION) for all hosts responding to a port
 Available options:
     -h, --help      Print this help and exit
     -p, --port=PORT Use PORT instead of 22
 EOF
-  exit "${1-0}" #default exit status 0
+    exit "${1-0}" #default exit status 0
 }
 
 msg() {
-	echo >&2 -e "${1-}"
+    echo >&2 -e "${1-}"
 }
 
 die() {
-	local msg=$1
-	local code=${2-1} # default exit status 1
-	msg "$msg"
-	exit "$code"
+    local msg=$1
+    local code=${2-1} # default exit status 1
+    msg "$msg"
+    exit "$code"
 }
 
+checkInstalled() {
+    tool=$1
+    messsage="${2:-I require $tool but it\'s not installed}"
+    command -v $tool >/dev/null 2>&1 || die $messsage
+}
 
-#requires: yq and avahi-resolve
-# yq comes with xq which is jq for xml
-# https://github.com/kislyuk/yq
-# pip install yq
-
-command -v jq >/dev/null 2>&1 || die "I require jq but it's not installed."
-command -v xq >/dev/null 2>&1 || die "I require xq but it's not installed."
-command -v avahi-resolve-address >/dev/null 2>&1 || die "I require avahi-resolve-address; install 'avahi-utils'."
+checkInstalled jq
+checkInstalled yq "missing yq, pip install yq"
+checkInstalled nmap
+checkInstalled avahi-resolve-address "avahi-resolve-address not installed, install 'avahi-utils'"
 
 
 # getopt short options go together, long options have commas
 TEMP=$(getopt -o hp: --long help,port: -n "$0" -- "$@")
 #shellcheck disable=SC2181
 if [ $? != 0 ] ; then
-	die "something wrong with getopt"
+    die "something wrong with getopt"
 fi
 eval set -- "$TEMP"
 
@@ -56,7 +57,7 @@ done
 if [ $# -gt 0 ]; then
     subnet=$1
 else
-	#shellcheck disable=SC1091
+    #shellcheck disable=SC1091
     source sind.sh
 
     mapfile -t subnets < <(ip -o -f inet addr show | awk "/scope global/ {print \$2 \" \" \$4}" | column -t)
@@ -67,7 +68,9 @@ fi
 echo "scanning for port $port in $subnet"
 
 
-hosts=$(sudo nmap -Pn -oX - -p"$port" "$subnet" | xq -c '[.nmaprun.host[] |  select(.address | type == "array") | select(.ports.port.state."@state" == "open") | {ip: .address[] | select(."@addrtype" | contains("ipv4"))."@addr", mac: .address[] | select(."@addrtype" | contains("mac"))."@addr", vendor: .address[] | select(."@addrtype" | contains("mac"))."@vendor"}]')
+sudo nmap -Pn -oX - -p"$port" "$subnet" > /tmp/nmapOutput
+
+hosts=$(xq -c '[.nmaprun.host[] |  select(.address | type == "array") | select(.ports.port.state."@state" == "open") | {ip: .address[] | select(."@addrtype" | contains("ipv4"))."@addr", mac: .address[] | select(."@addrtype" | contains("mac"))."@addr", vendor: .address[] | select(."@addrtype" | contains("mac"))."@vendor"}]' /tmp/nmapOutput)
 
 #hosts looks like
 #[
@@ -78,7 +81,8 @@ hosts=$(sudo nmap -Pn -oX - -p"$port" "$subnet" | xq -c '[.nmaprun.host[] |  sel
 #get mdns names
 count=$(echo "$hosts" | jq length);
 msg "resolving hostnames for $count hosts"
-resolved=$(avahi-resolve-address "$(echo "$hosts" | jq  -r '.[] | .ip')" 2>/dev/null)
+
+resolved=$(avahi-resolve-address $(echo "$hosts" | jq  -r '.[] | .ip') 2>/dev/null)
 # resolved looks like
 #192.168.1.4     pho.local
 
