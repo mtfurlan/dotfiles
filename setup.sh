@@ -109,8 +109,12 @@ get_github_latest_release() {
   curl -s "$1/releases/latest" | sed 's/.*href=".*tag.\(.*\)">redirected.*/\1/'
 }
 get_github_latest_release_file() {
-  # shellcheck disable=SC2086
-  echo "$1/releases/download/$(get_github_latest_release $1)/$2"
+  repoURL=$1
+  releaseFilename=$2
+  ver=$(get_github_latest_release "$repoURL")
+  #remove v from ver in filename because slackcat
+  releaseFilename=${releaseFilename/VER/${ver/v/}}
+  echo "$repoURL/releases/download/$ver/$releaseFilename"
 }
 
 installDebGH() {
@@ -161,7 +165,7 @@ cloneAndPull() {
     pushd "$dir" >/dev/null
     # shellcheck disable=SC2046
     latestTag="$(git describe --tags $(git rev-list --tags --max-count=1) 2>/dev/null || true)"
-    if [ ! -z "$latestTag" ]; then
+    if [ -n "$latestTag" ]; then
       echo "checking out '$latestTag'"
       git checkout "$latestTag" &>/dev/null
     else
@@ -194,6 +198,20 @@ update_tools() {
   chmod +x ~/.local/bin/up
   wget -q -O ~/.local/bin/diff-so-fancy https://raw.githubusercontent.com/so-fancy/diff-so-fancy/master/third_party/build_fatpack/diff-so-fancy
   chmod +x ~/.local/bin/diff-so-fancy
+
+
+  #check arch
+  case "$(uname -m)" in
+    "x86_64")
+      arch="amd64" ;;
+    *)
+      echo "can't install $package for this arch($(uname -m)), fix setup script"
+      return 1
+      ;;
+  esac
+
+  wget -q -O ~/.local/bin/slackcat "$(get_github_latest_release_file "https://github.com/bcicen/slackcat" "slackcat-VER-linux-$arch")"
+  chmod +x ~/.local/bin/slackcat
 }
 
 install_tools() {
@@ -278,6 +296,7 @@ symlinks() {
     link_exclude=""
   fi
 
+  # shellcheck disable=SC2086
   SYMLINK_DIRS="vim/bundle/Vundle.vim $(find vim -maxdepth 1 -type d | grep -v bundle | tail -n +2) bin" lsrc -U bin -x setup.sh -x README.md $link_exclude
   read -r -p "that look good? [Y/n] " response
   case "$response" in
@@ -287,6 +306,7 @@ symlinks() {
       echo "good luck, bye"
       exit 1;;
   esac
+  # shellcheck disable=SC2086
   SYMLINK_DIRS="vim/bundle/Vundle.vim $(find vim -maxdepth 1 -type d | grep -v bundle | tail -n +2) bin" rcup -v -U bin -x setup.sh -x README.md $link_exclude
 }
 
