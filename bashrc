@@ -121,6 +121,7 @@ export GIT_PS1_DESCRIBE_STYLE="describe"  # detached HEAD style:
 
 export PROMPT_DIRTRIM=5
 
+
 if [[ $colors -ge 8 ]]; then
     if [[ $colors -ge 256 ]]; then
         Red="\[$(tput setaf 1)\]"

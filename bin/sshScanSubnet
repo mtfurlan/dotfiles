@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -Eeuo pipefail
+set -euo pipefail
 
 # shellcheck disable=SC2120
 usage() {
@@ -85,6 +85,7 @@ msg "resolving hostnames for $count hosts"
 resolved=$(avahi-resolve-address $(echo "$hosts" | jq  -r '.[] | .ip') 2>/dev/null)
 # resolved looks like
 #192.168.1.4     pho.local
+echo "$resolved"
 
 while read -r line ; do
     #line is "ip      name"

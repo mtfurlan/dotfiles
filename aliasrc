@@ -34,36 +34,37 @@ whatismyip()
 
 alias duc="du --max-depth=1 -ha | sort -rh | sed 's/\.\///' | sed /^0/d"
 
-mkcd () { mkdir -p "$@" && cd "$@"; }
+mkcd () { mkdir -p "$@" && cd "$@" || echo "failed to cd '$*'?"; }
 
 
 gcd()
 {
     # based on https://unix.stackexchange.com/a/97958/60480
-    local tmp=$(mktemp)
+    local tmp
+    tmp=$(mktemp)
     local repo_name
 
-    git clone "$@" 2>&1 | tee $tmp
-    repo_name=$(awk -F\' '/Cloning into/ {print $2}' $tmp)
-    rm $tmp
+    git clone "$@" 2>&1 | tee "$tmp"
+    repo_name=$(awk -F\' '/Cloning into/ {print $2}' "$tmp")
+    rm "$tmp"
     printf "changing to directory %s\n" "$repo_name"
-    cd "$repo_name"
+    cd "$repo_name" || echo "failed to cd to cloned repo '$repo_name'?"
 }
 
 extract () {
     if [ -f "$1" ] ; then
       case $1 in
-        *.tar.bz2)   tar xjf $1     ;;
-        *.tar.gz)    tar xzf $1     ;;
-        *.bz2)       bunzip2 $1     ;;
-        *.rar)       unrar x $1     ;;
-        *.gz)        gunzip $1      ;;
-        *.tar)       tar xf $1      ;;
-        *.tbz2)      tar xjf $1     ;;
-        *.tgz)       tar xzf $1     ;;
-        *.zip)       unzip $1       ;;
-        *.Z)         uncompress $1  ;;
-        *.7z)        7z x $1        ;;
+        *.tar.bz2)   tar xjf    "$1" ;;
+        *.tar.gz)    tar xzf    "$1" ;;
+        *.bz2)       bunzip2    "$1" ;;
+        *.rar)       unrar x    "$1" ;;
+        *.gz)        gunzip     "$1" ;;
+        *.tar)       tar xf     "$1" ;;
+        *.tbz2)      tar xjf    "$1" ;;
+        *.tgz)       tar xzf    "$1" ;;
+        *.zip)       unzip      "$1" ;;
+        *.Z)         uncompress "$1" ;;
+        *.7z)        7z x       "$1" ;;
         *)     echo "'$1' cannot be extracted via extract()" ;;
          esac
      else
@@ -78,5 +79,5 @@ function dsf {
 alias gitaddWithoutWhitespace='git diff -U0 -w --no-color | git apply --cached --ignore-whitespace --unidiff-zero -'
 
 function setTitle {
-    echo -en "\033]0;$@\007"
+    echo -en "\033]0;$*\007"
 }
