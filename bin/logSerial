@@ -1,0 +1,59 @@
+#!/bin/bash
+set -euo pipefail
+
+# shellcheck disable=SC2120
+help () {
+    # if arguments, print them
+    [ $# == 0 ] || msg "$*"
+
+  cat <<EOF
+Usage: $(basename "${BASH_SOURCE[0]}") <DEVICE> <FILE>
+    cat raw device into file
+Available options:
+  -h, --help       display this help and exit
+  -b, --baud=BAUD  also set the baudrate
+EOF
+
+    # if args, exit 1 else exit 0
+    [ $# == 0 ] || exit 1
+    exit 0
+}
+
+msg() {
+    echo >&2 -e "${1-}"
+}
+
+die() {
+    local msg=$1
+    local code=${2-1} # default exit status 1
+    msg "$msg"
+    exit "$code"
+}
+
+# getopt short options go together, long options have commas
+TEMP=$(getopt -o hb: --long help,baud: -n "$0" -- "$@")
+#shellcheck disable=SC2181
+if [ $? != 0 ] ; then
+    die "something wrong with getopt"
+fi
+eval set -- "$TEMP"
+
+baud=""
+while true ; do
+    case "$1" in
+        -h|--help) help; exit 0; shift ;;
+        -b|--baud) baud=$2 ; shift 2 ;;
+        --) shift ; break ;;
+        *) die "issue parsing args, unexpected argument '$0'!" ;;
+    esac
+done
+
+device=${1:-}
+file=${2:-}
+if [[ "$device" == *"-h"* || -z "$device" ]]; then
+    help "not enough args"
+fi
+if [[ -n "$baud" ]]; then
+    stty -F "$device" "$baud"
+fi
+(stty raw; cat > "$file") < "$device"

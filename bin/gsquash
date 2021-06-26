@@ -1,0 +1,73 @@
+#!/bin/bash
+set -euo pipefail
+
+# shellcheck disable=SC2120
+help () {
+    # if arguments, print them
+    [ $# == 0 ] || echo "$*"
+
+  cat <<EOF
+Usage: $(basename "${BASH_SOURCE[0]}") [OPTION]... <target branch>
+    Squash current branch and rebase onto target branch(develop)
+    Example steps if target branch is develop:
+      git merge develop
+      git push
+      gsquash develop // and edit commit subject/body to be descriptive
+      // This is to ensure that no files changed, only history
+      git diff whatever-branch origin/whatever-branch
+      git push --force-with-lease
+Available options:
+  -h, --help       display this help and exit
+EOF
+
+    # if args, exit 1 else exit 0
+    [ $# == 0 ] || exit 1
+    exit 0
+}
+
+msg() {
+    echo >&2 -e "${1-}"
+}
+
+die() {
+    local msg=$1
+    local code=${2-1} # default exit status 1
+    msg "$msg"
+    exit "$code"
+}
+
+# getopt short options go together, long options have commas
+TEMP=$(getopt -o h --long help -n "$0" -- "$@")
+#shellcheck disable=SC2181
+if [ $? != 0 ] ; then
+    die "something wrong with getopt"
+fi
+eval set -- "$TEMP"
+
+while true ; do
+    case "$1" in
+        -h|--help) help; exit 0; shift ;;
+        --) shift ; break ;;
+        *) die "issue parsing args, unexpected argument '$0'!" ;;
+    esac
+done
+
+targetBranch=${1:-}
+curBranch=$(git rev-parse --abbrev-ref HEAD)
+
+if [ -z "$targetBranch" ]; then
+    help "need to pass in target branch"
+fi
+
+msg "squash/rebase $curBranch onto $targetBranch"
+
+# get log of commits between two branches
+commitMessages=$(git log "$targetBranch..$curBranch" --reverse --pretty=format:"%B")
+
+
+# https://blog.oddbit.com/post/2019-06-17-avoid-rebase-hell-squashing-wi/
+
+newCommit=$(echo -e "gsquash $curBranch onto $targetBranch\n\n$commitMessages" | git commit-tree -p "$targetBranch" "$curBranch^{tree}")
+
+git reset --hard "$newCommit"
+git commit --amend
