@@ -14,6 +14,14 @@ help() {
 Blu="$(tput setaf 4)"
 None="$(tput sgr0)"
 
+checkInstalled() {
+    tool=$1
+    messsage="${2:-I require $tool but it\'s not installed}"
+    command -v $tool >/dev/null 2>&1 || die $messsage
+}
+
+checkInstalled inotifywait
+
 if [ -z "$1" ]; then
     help "no arguments"
 fi
@@ -31,8 +39,10 @@ run(){
     ((runs=runs+1))
 }
 
+# alternate approach
+# inotifywait -r -e create --exclude "\.git" -m . -q | grep --line-buffered -E "\.c$|\.h$|\.sh$|\.gnu$"
 run
-inotifywait -e close_write,moved_to,create -m . 2>/dev/null |
+inotifywait -q -e close_write,moved_to,create -m . |
 while read -r directory events filename; do
     if [ "$filename" = "$target" ]; then
         run
