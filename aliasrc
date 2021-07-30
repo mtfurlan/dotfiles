@@ -19,7 +19,8 @@ alias gpush="git push --force-with-lease"
 
 alias ix="curl -F 'f:1=<-' ix.io"
 alias qr='curl -F-=\<- qrenco.de'
-alias weather='curl wttr.in?c'
+alias weather='curl "wttr.in?m&format=4"'
+alias weatherGraph='curl v2.wttr.in?m'
 
 alias :e=vim
 
@@ -54,17 +55,15 @@ gcd()
 extract () {
     if [ -f "$1" ] ; then
       case $1 in
-        *.tar.bz2)   tar xjf    "$1" ;;
-        *.tar.gz)    tar xzf    "$1" ;;
-        *.bz2)       bunzip2    "$1" ;;
-        *.rar)       unrar x    "$1" ;;
-        *.gz)        gunzip     "$1" ;;
-        *.tar)       tar xf     "$1" ;;
-        *.tbz2)      tar xjf    "$1" ;;
-        *.tgz)       tar xzf    "$1" ;;
-        *.zip)       unzip      "$1" ;;
-        *.Z)         uncompress "$1" ;;
-        *.7z)        7z x       "$1" ;;
+        *.tar | *.tar.* | *.tgz | *.txf) tar xf     "$1"     ;;
+        *.bz2)                           bunzip2    "$1"     ;;
+        *.rar)                           unrar x    "$1"     ;;
+        *.gz)                            gunzip     "$1"     ;;
+        *.tbz2)                          tar xjf    "$1"     ;;
+        *.zip)                           unzip      "$1"     ;;
+        *.Z)                             uncompress "$1"     ;;
+        *.7z)                            7z x       "$1"     ;;
+        *.xz)                            unxz -k    "$1"     ;;
         *)     echo "'$1' cannot be extracted via extract()" ;;
          esac
      else
@@ -80,4 +79,8 @@ alias gitaddWithoutWhitespace='git diff -U0 -w --no-color | git apply --cached -
 
 function setTitle {
     echo -en "\033]0;$*\007"
+}
+
+function lyricsGrep {
+    find . -type f \( -name "*.flac" -o -name "*.mp3" \) -print0 | xargs -0 exiftool -title -artist -lyrics -lyrics-xxx | grep -E -i -B2 "$@"
 }
