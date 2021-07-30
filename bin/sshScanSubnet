@@ -89,9 +89,9 @@ echo "$resolved"
 
 while read -r line ; do
     #line is "ip      name"
-    ip=$(echo "$line" | cut -d' ' -f1)
-    hostname=$(echo "$line" | cut -d' ' -f2)
-    #msg "$ip: $hostname"
+    ip=$(echo "$line" | awk '{print $1}')
+    hostname=$(echo "$line" | awk '{print $2}')
+    #msg "got '$ip': '$hostname'"
     #jq can append to stuff!
     hosts=$(echo "$hosts" | jq --arg IP "$ip" --arg HOST "$hostname" '[.[] | select(.ip == $IP) += {hostname: $HOST}]')
 done <<< "$resolved"
