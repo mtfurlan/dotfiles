@@ -142,13 +142,6 @@ if [[ $colors -ge 8 ]]; then
 
     export GIT_PS1_SHOWCOLORHINTS=1
 
-    #A way to show if user is in groups wheel, sudo, or adm
-    if [[ `groups` =~ wheel|sudo|adm ]]; then
-        sudoPS1="$Gre(s)$None"
-    else
-        sudoPS1="$Red(ns)$None"
-    fi
-
     # http://serverfault.com/a/425657/228348
     # use color range 130-210
     hostColorIndex=$(hostname | od | tr ' ' '\n' | awk "{total = total + \$1}END{print $hostRangeStart + (total % $hostRange)}")
@@ -157,7 +150,7 @@ if [[ $colors -ge 8 ]]; then
     # debian chroot stuff copied from a debian /etc/skel/.bahsrc
     # \${?##0} shows the return code if nonzero
     # VENV is a function that is either empty or the python virtualenv name
-    myFancyPS1Start="${debian_chroot:+($debian_chroot)}$Red\${?##0}$Cya$VENV$Gre\u@$hostColor\h$sudoPS1:$Blu\w$None"
+    myFancyPS1Start="${debian_chroot:+($debian_chroot)}$Red\${?##0}$Cya$VENV$Gre\u@$hostColor\h:$Blu\w$None"
     myFancyPS1End="$None$ "
     
     if [ "$git_prompt" = true ]; then
