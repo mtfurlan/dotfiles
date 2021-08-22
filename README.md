@@ -23,9 +23,12 @@
 * https://github.com/morgwai/tpbat-utils-acpi
 
 ## Clock date format
-```
-%F | %a %b | %T
-```
+* `dconf-editor`, `org / mate / panel / objects / clock / prefs`
+* Change `format` to "custom"
+* `custom-format` to
+  ```
+  %F | %a %b | %T
+  ```
 
 ## automounting disks
 * Disable mate automounting: `gsettings set org.mate.media-handling automount false`
