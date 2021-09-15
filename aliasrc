@@ -82,5 +82,5 @@ function setTitle {
 }
 
 function lyricsGrep {
-    find . -type f \( -name "*.flac" -o -name "*.mp3" \) -print0 | xargs -0 exiftool -title -artist -lyrics -lyrics-xxx | grep -E -i -B2 "$@"
+    find . -type f \( -name "*.flac" -o -name "*.mp3" \) -print0 | xargs -0 exiftool -artist -album -title -lyrics -lyrics-xxx | grep -E -i -B3 "$@"
 }
