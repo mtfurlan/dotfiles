@@ -27,13 +27,14 @@ die() {
 checkInstalled() {
     tool=$1
     messsage="${2:-I require $tool but it\'s not installed}"
-    command -v $tool >/dev/null 2>&1 || die $messsage
+    command -v "$tool" >/dev/null 2>&1 || die "$messsage"
 }
 
 checkInstalled jq
 checkInstalled yq "missing yq, pip install yq"
 checkInstalled nmap
 checkInstalled avahi-resolve-address "avahi-resolve-address not installed, install 'avahi-utils'"
+checkInstalled sind "missing sind https://github.com/l3laze/sind"
 
 
 # getopt short options go together, long options have commas
@@ -58,16 +59,14 @@ if [ $# -gt 0 ]; then
     subnet=$1
 else
     #shellcheck disable=SC1091
-    source sind.sh
-
     mapfile -t subnets < <(ip -o -f inet addr show | awk "/scope global/ {print \$2 \" \" \$4}" | column -t)
-    subnetChoice=$(sind "Choose one" "${subnets[@]}")
-    subnet=$(echo "${subnets[$subnetChoice]}" | awk '{print $2}')
+    subnet=$(sind -t "Choose one" -o "${subnets[@]}")
 fi
 
 echo "scanning for port $port in $subnet"
 
 
+# shellcheck disable=SC2024
 sudo nmap -Pn -oX - -p"$port" "$subnet" > /tmp/nmapOutput
 
 hosts=$(xq -c '[.nmaprun.host[] |  select(.address | type == "array") | select(.ports.port.state."@state" == "open") | {ip: .address[] | select(."@addrtype" | contains("ipv4"))."@addr", mac: .address[] | select(."@addrtype" | contains("mac"))."@addr", vendor: .address[] | select(."@addrtype" | contains("mac"))."@vendor"}]' /tmp/nmapOutput)
@@ -82,7 +81,7 @@ hosts=$(xq -c '[.nmaprun.host[] |  select(.address | type == "array") | select(.
 count=$(echo "$hosts" | jq length);
 msg "resolving hostnames for $count hosts"
 
-resolved=$(avahi-resolve-address $(echo "$hosts" | jq  -r '.[] | .ip') 2>/dev/null)
+resolved=$(avahi-resolve-address "$(echo "$hosts" | jq  -r '.[] | .ip')" 2>/dev/null)
 # resolved looks like
 #192.168.1.4     pho.local
 echo "$resolved"
