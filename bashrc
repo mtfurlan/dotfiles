@@ -41,20 +41,24 @@ set -o vi
 
 #allow machine specific config
 if [ -r ~/.localrc ]; then
+    # shellcheck disable=SC1090
     . ~/.localrc
 fi
 
 # Alias
 if [ -r ~/.aliasrc ]; then
+    # shellcheck disable=SC1090
     . ~/.aliasrc
 fi
 
 # fzf
 if [ -r ~/.fzf.bash ]; then
+    # shellcheck disable=SC1090
     . ~/.fzf.bash
 fi
 
 if [ -r ~/.gh-completion ]; then
+    # shellcheck disable=SC1090
     . ~/.gh-completion
 fi
 
@@ -68,7 +72,7 @@ fi
 # https://github.com/nvbn/thefuck
 # defines 'fuck' as a command to fix the last command
 if builtin type -P "thefuck" &> /dev/null; then
-    eval $(thefuck --alias)
+    eval "$(thefuck --alias)"
 fi
 
 # make less more friendly for non-text input files, see lesspipe(1)
@@ -99,7 +103,8 @@ fi
 export VIRTUAL_ENV_DISABLE_PROMPT=1
 
 # based on https://stackoverflow.com/a/20026992/2423187
-function virtualenv_info(){
+function virtualenv_info
+{
     if [[ -n "$VIRTUAL_ENV" ]]; then
         # Strip out the path and just leave the env name
         echo "(${VIRTUAL_ENV##*/})"
@@ -145,14 +150,14 @@ if [[ $colors -ge 8 ]]; then
     # http://serverfault.com/a/425657/228348
     # use color range 130-210
     hostColorIndex=$(hostname | od | tr ' ' '\n' | awk "{total = total + \$1}END{print $hostRangeStart + (total % $hostRange)}")
-    hostColor="\[$(tput setaf $hostColorIndex)\]"
+    hostColor="\[$(tput setaf "$hostColorIndex")\]"
 
     # debian chroot stuff copied from a debian /etc/skel/.bahsrc
     # \${?##0} shows the return code if nonzero
     # VENV is a function that is either empty or the python virtualenv name
     myFancyPS1Start="${debian_chroot:+($debian_chroot)}$Red\${?##0}$Cya$VENV$Gre\u@$hostColor\h:$Blu\w$None"
     myFancyPS1End="$None$ "
-    
+
     if [ "$git_prompt" = true ]; then
         PROMPT_COMMAND='__git_ps1 "$myFancyPS1Start" "$myFancyPS1End"'
     else
@@ -165,7 +170,11 @@ fi
 
 # enable color support of ls and also add handy aliases
 if which dircolors >/dev/null; then
-    test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
+    if [[ -f "$HOME/.dircolors" ]]; then
+        eval "$(dircolors -b ~/.dircolors)"
+    else
+        eval "$(dircolors -b)"
+    fi
 fi
 
 # colored GCC warnings and errors
@@ -173,9 +182,11 @@ export GCC_COLORS='error=01;31:warning=01;35:note=01;36:caret=01;32:locus=01:quo
 
 if ! shopt -oq posix; then
 	if [ -f /usr/share/bash-completion/bash_completion ]; then
-		. /usr/share/bash-completion/bash_completion
-	elif [ -f /etc/bash_completion ]; then
-		. /etc/bash_completion
+        # shellcheck disable=SC1091
+        . /usr/share/bash-completion/bash_completion
+    elif [ -f /etc/bash_completion ]; then
+        # shellcheck disable=SC1091
+        . /etc/bash_completion
 	fi
 	complete -cf sudo
 fi
@@ -188,10 +199,11 @@ fi
 # If we are, update the value of DISPLAY to be that in the cache.
 function update-x11-forwarding
 {
-    if [ -z "$STY" -a -z "$TMUX" ]; then
-        echo $DISPLAY > ~/.display.txt
+    if [ -z "$STY" ] && [ -z "$TMUX" ]; then
+        echo "$DISPLAY" > ~/.display.txt
     else
-        export DISPLAY=`cat ~/.display.txt`
+        DISPLAY=$(cat ~/.display.txt)
+        export DISPLAY
     fi
 }
 
@@ -208,14 +220,5 @@ preexec() {
 }
 trap 'preexec' DEBUG
 
-
-# set terminal title on ssh
-# https://github.com/gnunn1/tilix/issues/577#issuecomment-261271110
-ssh()
-{
-    SSHAPP=$(which ssh)
-    ARGS=$@
-    echo -en "\033]0;$ARGS\007"
-    $SSHAPP $ARGS
-    echo -en "\033]0;$(hostname)\007"
-}
+# try to set terminal title to hostname
+setTitle "$(hostname)"
