@@ -1,37 +1,49 @@
 #!/bin/bash
 set -euo pipefail
 
-#set -x
-
+# shellcheck disable=SC2120
 help () {
-    echo "Usage: $0 FILE [LINE NUMBER]"
-    echo "       $0"
-    echo "Link to the online git file or repo, with optional line number"
-    echo "  -h, --help       display this help and exit"
+    # if arguments, print them
+    [ $# == 0 ] || echo "$*"
+
+  cat <<EOF
+Usage: $0 FILE [LINE NUMBER]
+       $0
+Link to the online git file or repo, with optional line number
+  -h, --help       display this help and exit
+EOF
+
+    # if args, exit 1 else exit 0
+    [ $# == 0 ] || exit 1
+    exit 0
 }
 
-TEMP=`getopt -o h --long help -n 'gsource' -- "$@"`
-if [ $? != 0 ] ; then
-    echo "Something wrong with getopt" >&2
-    exit 1
-fi
+msg() {
+    echo >&2 -e "${1-}"
+}
 
+die() {
+    local msg=$1
+    local code=${2-1} # default exit status 1
+    msg "$msg"
+    exit "$code"
+}
+
+# getopt short options go together, long options have commas
+TEMP=$(getopt -o h --long help -n "$0" -- "$@")
+#shellcheck disable=SC2181
+if [ $? != 0 ] ; then
+    die "something wrong with getopt"
+fi
 eval set -- "$TEMP"
 
-help=false
-# extract options and their arguments into variables.
 while true ; do
     case "$1" in
-        -h|--help) help=true ; shift ;;
+        -h|--help) help; exit 0; shift ;;
         --) shift ; break ;;
-        *) echo "Internal error!" ; exit 1 ;;
+        *) die "issue parsing args, unexpected argument '$0'!" ;;
     esac
 done
-
-if [[ $help = true ]]; then
-    help
-    exit 0
-fi
 
 #if [[ $# -lt 1 ]]; then
 #    help
@@ -42,13 +54,9 @@ linkLine=0
 
 # get git remote URL
 # just picks the first
-set +e
-url=$(git config --get remote.origin.url)
-if [[ $? -ne 0 ]]; then
-    echo "no remote?"
-    exit 1
+if ! url=$(git config --get remote.origin.url); then
+    die "no remote?"
 fi
-set -e
 
 # set provider specific stuff
 lineStr=""
@@ -64,10 +72,12 @@ elif [[ $url == *"github.com"* ]]; then
     if [[ $linkLine -ne 0 ]]; then
         lineStr="#L$line"
     fi
+else
+    die "dunno what to do for $url"
 fi
 
 # parse remote URL (git@ or https://) to something like "tomesoftware/chad-db"
-repo=$(echo $url | sed 's/.*[\/:]\([^\/]*\)\/\([^\/]*\).git$/\1\/\2/')
+repo=$(echo "$url" | perl -pe 's#(?:https|git)(?:://|@)(?:[^:/]*)(?:[:/])##; s/\.git//')
 
 # if no args, just print repo url
 if [[ $# -lt 1 ]]; then
@@ -77,8 +87,7 @@ fi
 
 relFile=$1
 if [[ ! -f $relFile ]]; then
-    echo "file '$relFile' does not exist"
-    exit 2
+    die "file '$relFile' does not exist"
 fi
 
 if [[ $# -eq 2 ]]; then
@@ -88,7 +97,7 @@ fi
 
 # get file relative to git root
 gitRoot=$(git rev-parse --show-toplevel)
-fullFile=$(realpath $relFile) # get full path of relative filepath
+fullFile=$(realpath "$relFile") # get full path of relative filepath
 file=${fullFile#"$gitRoot/"} # remove prefix of $gitRoot/
 
 # get current branch or commit hash
@@ -106,3 +115,4 @@ head=${head:-$(git rev-parse HEAD)}
 # print the URL
 url="https://$provider/$repo/$urlThing/$head/$file$lineStr"
 echo "$url"
+exit 0
