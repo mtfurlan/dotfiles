@@ -111,9 +111,13 @@ get_github_latest_release() {
 get_github_latest_release_file() {
   repoURL=$1
   releaseFilename=$2
+  remove_v=${3:-false}
   ver=$(get_github_latest_release "$repoURL")
-  #remove v from ver in filename because slackcat
-  releaseFilename=${releaseFilename/VER/${ver/v/}}
+  #do we remove v from ver in filename
+  if [ "$remove_v" = true ]; then
+    ver=${ver/v/}
+  fi
+  releaseFilename=${releaseFilename/VER/$ver}
   echo "$repoURL/releases/download/$ver/$releaseFilename"
 }
 
@@ -210,7 +214,7 @@ update_tools() {
       ;;
   esac
 
-  wget -q -O ~/.local/bin/slackcat "$(get_github_latest_release_file "https://github.com/bcicen/slackcat" "slackcat-VER-linux-$arch")"
+  wget -q -O ~/.local/bin/slackcat "$(get_github_latest_release_file "https://github.com/bcicen/slackcat" "slackcat-VER-linux-$arch" true)"
   chmod +x ~/.local/bin/slackcat
 }
 
