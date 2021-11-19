@@ -77,7 +77,7 @@ else
 fi
 
 # parse remote URL (git@ or https://) to something like "tomesoftware/chad-db"
-repo=$(echo "$url" | perl -pe 's#(?:https|git)(?:://|@)(?:[^:/]*)(?:[:/])##; s/\.git//')
+repo=$(echo "$url" | perl -pe 's#^(?:https|git)(?:://|@)(?:[^:/]*)(?:[:/])##; s/\.git$//')
 
 # if no args, just print repo url
 if [[ $# -lt 1 ]]; then
