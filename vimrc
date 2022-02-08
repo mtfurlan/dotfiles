@@ -45,6 +45,9 @@ let mapleader = ","
 " re-source this file
 :nnoremap <leader>sv :source $MYVIMRC<cr>
 
+" insert tab character with shift tab
+:inoremap <S-Tab> <C-V><Tab>
+
 
 " https://github.com/skwp/dotfiles/blob/master/vimrc
 " ================ General Config ====================
@@ -59,14 +62,16 @@ set autoread "Reload files changed outside vim
 " Keep undo history across sessions, by storing in file.
 " Only works all the time.
 if has('persistent_undo')
-  silent !mkdir ~/.vim/undodir > /dev/null 2>&1
-  set undodir=~/.vim/undodir
   set undofile
 endif
 
 " ===Remvoe silly temp files ===
-set backupdir=~/.vim/tmp,.
-set directory=~/.vim/tmp,.
+silent !mkdir ~/.vim/backup > /dev/null 2>&1
+silent !mkdir ~/.vim/swap > /dev/null 2>&1
+silent !mkdir ~/.vim/undo > /dev/null 2>&1
+set backupdir=~/.vim/backup/
+set directory=~/.vim/swap/
+set undodir=~/.vim/undo/
 
 " ============== Plugin Configs ===============
 " ===The vimairline plugin stuff===
@@ -84,6 +89,7 @@ set hidden
 
 " ===vim markdown preview settings===
 let g:livedown_browser = "google-chrome"
+let g:livedown_open = 0
 map <C-P> :LivedownToggle<CR>
 
 " === Tmuxline ===
@@ -105,6 +111,7 @@ let g:tmuxline_preset = {
 set statusline+=%#warningmsg#
 set statusline+=%{SyntasticStatuslineFlag()}
 set statusline+=%*
+
 
 let g:syntastic_always_populate_loc_list = 1
 let g:syntastic_auto_loc_list = 1
