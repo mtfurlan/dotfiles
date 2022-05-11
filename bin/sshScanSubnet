@@ -27,7 +27,7 @@ die() {
 checkInstalled() {
     tool=$1
     messsage="${2:-I require $tool but it\'s not installed}"
-    command -v $tool >/dev/null 2>&1 || die $messsage
+    command -v "$tool" >/dev/null 2>&1 || die "$messsage"
 }
 
 checkInstalled jq
@@ -68,6 +68,7 @@ fi
 echo "scanning for port $port in $subnet"
 
 
+# shellcheck disable=SC2024
 sudo nmap -Pn -oX - -p"$port" "$subnet" > /tmp/nmapOutput
 
 hosts=$(xq -c '[.nmaprun.host[] |  select(.address | type == "array") | select(.ports.port.state."@state" == "open") | {ip: .address[] | select(."@addrtype" | contains("ipv4"))."@addr", mac: .address[] | select(."@addrtype" | contains("mac"))."@addr", vendor: .address[] | select(."@addrtype" | contains("mac"))."@vendor"}]' /tmp/nmapOutput)
@@ -82,10 +83,10 @@ hosts=$(xq -c '[.nmaprun.host[] |  select(.address | type == "array") | select(.
 count=$(echo "$hosts" | jq length);
 msg "resolving hostnames for $count hosts"
 
+# shellcheck disable=SC2046
 resolved=$(avahi-resolve-address $(echo "$hosts" | jq  -r '.[] | .ip') 2>/dev/null)
 # resolved looks like
 #192.168.1.4     pho.local
-echo "$resolved"
 
 while read -r line ; do
     #line is "ip      name"
@@ -97,4 +98,4 @@ while read -r line ; do
 done <<< "$resolved"
 
 # format as TSV, tell column to *only* work on tabs and don't merge empty values
-echo "$hosts" | jq -r '(["IP", "HOSTANME", "MAC", "VENDOR"]), (.[] | [.ip, .hostname, .mac, .vendor]) | @tsv' | column -nt -s $'\t'
+echo "$hosts" | jq -r '(["IP", "HOSTANME", "MAC", "VENDOR"]), (.[] | [.ip, .hostname, .mac, .vendor]) | @tsv' | column -t -s $'\t'
