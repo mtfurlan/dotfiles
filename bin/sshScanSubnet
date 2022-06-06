@@ -71,12 +71,16 @@ echo "scanning for port $port in $subnet"
 # shellcheck disable=SC2024
 sudo nmap -Pn -oX - -p"$port" "$subnet" > /tmp/nmapOutput
 
-hosts=$(xq -c '[.nmaprun.host[] |  select(.address | type == "array") | select(.ports.port.state."@state" == "open") | {ip: .address[] | select(."@addrtype" | contains("ipv4"))."@addr", mac: .address[] | select(."@addrtype" | contains("mac"))."@addr", vendor: .address[] | select(."@addrtype" | contains("mac"))."@vendor"}]' /tmp/nmapOutput)
+# TODO: mac address won't exist if we're across a subnet that doesn't pass stuff
+# This means host.address will be obect not array because fuck you
+# We need to handle it
+hosts=$(xq -c '[.nmaprun.host[] | select(.ports.port.state."@state" == "open") | if .address | type == "array" then {ip: .address[] | select(."@addrtype" | contains("ipv4"))."@addr", mac: .address[] | select(."@addrtype" | contains("mac"))."@addr", vendor: .address[] | select(."@addrtype" | contains("mac"))."@vendor"} else {ip: .address."@addr", mac: null, vendor: null} end]' /tmp/nmapOutput)
 
 #hosts looks like
 #[
 #    {"ip":"192.168.1.1","mac":"80:2A:A8:4F:8F:E1","vendor":"Ubiquiti Networks"},
 #    {"ip":"192.168.1.2","mac":"E0:63:DA:2E:32:9E","vendor":null}
+#    {"ip":"10.4.4.4","mac":null,"vendor":null}
 #]
 
 #get mdns names
