@@ -1,50 +1,114 @@
 #!/bin/bash
+set -euo pipefail
 
-help() {
+# shellcheck disable=SC2120
+help () {
     # if arguments, print them
-    [ $# == 0 ] || echo -e "err: $*\n"
+    [ $# == 0 ] || echo "$*"
 
-    echo "$0 *target*"
-    echo "run target whenever it changes"
+  cat <<EOF
+Usage: $(basename "${BASH_SOURCE[0]}") <TARGET> [COMMAND]
+       $(basename "${BASH_SOURCE[0]}") [-d|--dir] <FILTER> <COMMAND>
+watch TARGET for changes and run it or COMMAND (you can substitute %% for
+TARGET in COMMAND)
+Alternately, watch current dir for changes to filenames matching FILTER regex
+(must be in quotes like ".*\.puml") and run COMMAND
+Available options:
+  -h, --help       display this help and exit
+  -d, --dir        watch all files in current dir not just TARGET
+EOF
 
     # if args, exit 1 else exit 0
     [ $# == 0 ] || exit 1
     exit 0
 }
+
 Blu="$(tput setaf 4)"
 None="$(tput sgr0)"
 
 checkInstalled() {
     tool=$1
     messsage="${2:-I require $tool but it\'s not installed}"
-    command -v $tool >/dev/null 2>&1 || die $messsage
+    command -v "$tool" >/dev/null 2>&1 || die "$messsage"
 }
+
+msg() {
+    echo >&2 -e "${1-}"
+}
+
+die() {
+    local msg=$1
+    local code=${2-1} # default exit status 1
+    msg "$msg"
+    exit "$code"
+}
+
+# getopt short options go together, long options have commas
+TEMP=$(getopt -o hd --long help,dir -n "$0" -- "$@")
+#shellcheck disable=SC2181
+if [ $? != 0 ] ; then
+    die "something wrong with getopt"
+fi
+eval set -- "$TEMP"
+
+dir=false
+while true ; do
+    case "$1" in
+        -h|--help) help; exit 0; shift ;;
+        -d|--dir) dir=true ; shift ;;
+        --) shift ; break ;;
+        *) die "issue parsing args, unexpected argument '$0'!" ;;
+    esac
+done
+
+if [ -z "$1" ]; then
+    die "no arguments"
+fi
+
+
+if [ "$dir" = true ]; then
+    filter=${1:-}
+    command=${2:-}
+    if [ -z "$command" ]; then
+        die "not enough arguments"
+    fi
+else
+    target=$1
+    command=${2:-./$1}
+    command=${command/\%%/"$target"}
+fi
 
 checkInstalled inotifywait
 
-if [ -z "$1" ]; then
-    help "no arguments"
-fi
-
-target=$1
-
-if [ ! -x "$target" ]; then
+# if we didn't get a command and target isn't executable, issues
+if [ "$dir" = false ] && [ ! -x "$target" ] && [ "$command" == "./$target" ]; then
     help "$target isn't an executable file"
 fi
 runs=0
 
 run(){
     echo "${Blu}run $runs:${None}"
-    ./$target
+    $command
     ((runs=runs+1))
 }
 
 # alternate approach
 # inotifywait -r -e create --exclude "\.git" -m . -q | grep --line-buffered -E "\.c$|\.h$|\.sh$|\.gnu$"
-run
-inotifywait -q -e close_write,moved_to,create -m . |
+if [ "$dir" = true ]; then
+    targetFileDir=.
+else
+    filter=$(basename "$target")
+    targetFileDir=$(dirname "$target")
+fi
+
+
+run # run at startup
+
+# shellcheck disable=SC2034
+inotifywait -q -e close_write,moved_to -r --exclude "\.git" -m "$targetFileDir" |
 while read -r directory events filename; do
-    if [ "$filename" = "$target" ]; then
+    #shellcheck disable=SC2053
+    if [[ "$filename" =~ $filter ]]; then
         run
     fi
 done
