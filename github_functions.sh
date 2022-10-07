@@ -26,8 +26,14 @@ installDebGH() {
   echo
   echo "installing or updating $package from github/$repo"
 
-  version=$(curl -s "https://github.com/$repo/releases/latest" | sed 's/.*releases\/tag\/v\([0-9.]*\)">redirected.*/\1/')
+  version=$(curl -Ls -o /dev/null -w '%{url_effective}' "https://github.com/$repo/releases/latest" | sed 's/.*tag\/v\?//')
   installedVersion=$(dpkg -s "$package" 2>/dev/null | grep Version | sed 's/Version: //') || true
+
+
+  if [ -z "$version" ]; then
+    echo "Can't fetch version for $package"
+    return 1
+  fi
 
   if [ "$installedVersion" != "$version" ]; then
     echo "VERSION MISMATCH: $package version: $version, installedVersion: $installedVersion"
