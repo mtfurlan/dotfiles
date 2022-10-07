@@ -24,6 +24,7 @@ EOF
 }
 
 Blu="$(tput setaf 4)"
+Red="$(tput setaf 1)"
 None="$(tput sgr0)"
 
 checkInstalled() {
@@ -87,8 +88,13 @@ fi
 runs=0
 
 run(){
-    echo "${Blu}run $runs:${None}"
-    $command
+    echo "${Blu}runFile: run: $runs${None}"
+    ret=0
+    $command || ret=$?
+    # shellcheck disable=SC2181
+    if [[ "$ret" -ne 0 ]]; then
+        echo "${Red}runFile: command return code $ret${None}"
+    fi
     ((runs=runs+1))
 }
 
