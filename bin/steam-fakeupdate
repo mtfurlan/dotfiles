@@ -1,0 +1,86 @@
+#!/bin/bash
+set -euo pipefail
+
+# shellcheck disable=SC2120
+help () {
+    # if arguments, print them
+    [ $# == 0 ] || echo "$*"
+
+  cat <<EOF
+Usage: $(basename "${BASH_SOURCE[0]}") <appmanifest>
+  fake steam into thinking appmanifest is updated
+Available options:
+  -h, --help       display this help and exit
+EOF
+
+    # if args, exit 1 else exit 0
+    [ $# == 0 ] || exit 1
+    exit 0
+}
+
+msg() {
+    echo >&2 -e "${1-}"
+}
+
+die() {
+    local msg=$1
+    local code=${2-1} # default exit status 1
+    msg "$msg"
+    exit "$code"
+}
+
+# getopt short options go together, long options have commas
+TEMP=$(getopt -o h --long help -n "$0" -- "$@")
+#shellcheck disable=SC2181
+if [ $? != 0 ] ; then
+    die "something wrong with getopt"
+fi
+eval set -- "$TEMP"
+
+while true ; do
+    case "$1" in
+        -h|--help) help; exit 0; shift ;;
+        --) shift ; break ;;
+        *) die "issue parsing args, unexpected argument '$0'!" ;;
+    esac
+done
+
+appManifest=${1:-}
+if [ -z "$appManifest" ]; then
+    help "need to pass in target app manifest file"
+fi
+
+read -n 1 -s -r -p "Press the any key when steam is dead"
+echo
+
+json=$(perl -0pe 'BEGIN {print "{\n";} END {print "}\n";} s/"\n\W*{/": {/g; s/"\t+"(.*)"/": "\1"/g; s/"\n(?!\W*})/",\n/g; s/}(\n\t*")/},$1/g' "$appManifest")
+
+appID=$(echo "$json" | jq -r '.AppState.appid')
+currentVersions=$(curl --silent "https://api.steamcmd.net/v1/info/$appID")
+
+
+currentDepotManifests=$(echo "$json" | jq -c '.AppState.InstalledDepots | to_entries | .[] | {"depot": .key, "manifest": .value.manifest}')
+
+replaceInACF() {
+    search=$1
+    replace=$2
+    perl -i -0pe "s/$search/$replace/" "$appManifest"
+}
+
+while IFS= read -r line; do
+    depot=$(echo "$line" | jq -r '.depot')
+    manifest=$(echo "$line" | jq -r '.manifest')
+    newManifest=$(echo "$currentVersions" | jq -r ".data.\"$appID\".depots.\"$depot\"?.manifests.public")
+    if [ "$newManifest" != "null" ] && [ "$newManifest" != "$manifest" ]; then
+        replaceInACF "(\"$depot\"\n\t*{\n\t*\"manifest\"\t*)\"[0-9]+" "\$1\"$newManifest"
+    fi
+done <<< "$currentDepotManifests"
+
+
+#shellcheck disable=SC2016
+replaceInACF '("ScheduledAutoUpdate"\t*)"[^"]+"' '$1"0"'
+replaceInACF '("LastUpdated"\t*)"[^"]+"' "\$1\"$(date +%s)\""
+#shellcheck disable=SC2016
+replaceInACF '("StateFlags"\t*)"[^"]+"' '$1"4"'
+#shellcheck disable=SC2016
+replaceInACF '("UpdateResult"\t*)"[^"]+"' '$1"0"'
