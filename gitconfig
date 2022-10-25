@@ -9,6 +9,9 @@
 [includeIf "gitdir:~/tome/"]
 	path = ~/tome/.gitconfig
 
+[include]
+	    path = ~/.gitconfiglocal
+
 [color]
 	ui = true
 [push]
@@ -71,9 +74,6 @@
 	defaultBranch = main
 [url "git@github.com:"]
 	insteadOf = https://github.com/
-[credential "https://github.com"]
-	helper = 
-	helper = !/usr/bin/gh auth git-credential
 [credential "https://gist.github.com"]
-	helper = 
+	helper =
 	helper = !/usr/bin/gh auth git-credential

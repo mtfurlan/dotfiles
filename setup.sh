@@ -128,8 +128,17 @@ update_tools() {
   mkdir -p ~/.local/bin
   wget -q -O ~/.local/bin/up "$(get_github_latest_release_file https://github.com/akavel/up up)"
   chmod +x ~/.local/bin/up
+
   wget -q -O ~/.local/bin/diff-so-fancy https://raw.githubusercontent.com/so-fancy/diff-so-fancy/master/third_party/build_fatpack/diff-so-fancy
   chmod +x ~/.local/bin/diff-so-fancy
+  cat <<EOF > ~/.gitconfiglocal
+# this is a generated file by dotfiles setup.sh
+[core]
+	pager = diff-so-fancy | less --tabs=4 -RFX
+
+[interactive]
+	diffFilter = diff-so-fancy --patch
+EOF
 
 
   #check arch
