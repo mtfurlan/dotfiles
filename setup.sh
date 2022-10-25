@@ -228,17 +228,16 @@ symlinks() {
   # Everything else, like spelling and extra filetype plugins I want in version control
 
   # this probably assumes it's in the ~/.dotfiles dir
+  link_exclude="-x github_functions.sh -x setup.sh -x README.md -x LICENSE"
 
   # "guest" mode because I keep using this on pis I hand out
   # dont' link ssh config or git config.
   if [ "$guest" = true ]; then
-    link_exclude="-x ssh -x gitconfig"
-  else
-    link_exclude=""
+    link_exclude="$link_exclude -x ssh -x gitconfig"
   fi
 
   # shellcheck disable=SC2086
-  SYMLINK_DIRS="vim/bundle/Vundle.vim $(find vim -maxdepth 1 -type d | grep -v bundle | tail -n +2) bin" lsrc -U bin -x setup.sh -x README.md $link_exclude
+  SYMLINK_DIRS="vim/bundle/Vundle.vim $(find vim -maxdepth 1 -type d | grep -v bundle | tail -n +2) bin" lsrc -U bin $link_exclude
   read -r -p "that look good? [Y/n] " response
   case "$response" in
     [yY][eE][sS]|[yY]|"")
@@ -248,7 +247,7 @@ symlinks() {
       exit 1;;
   esac
   # shellcheck disable=SC2086
-  SYMLINK_DIRS="vim/bundle/Vundle.vim $(find vim -maxdepth 1 -type d | grep -v bundle | tail -n +2) bin" rcup -v -U bin -x setup.sh -x README.md $link_exclude
+  SYMLINK_DIRS="vim/bundle/Vundle.vim $(find vim -maxdepth 1 -type d | grep -v bundle | tail -n +2) bin" rcup -v -U bin $link_exclude
 }
 
 ## execution starts here
