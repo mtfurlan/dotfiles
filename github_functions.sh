@@ -3,7 +3,7 @@
 # this is intended to be sourced to get functions
 
 get_github_latest_release() {
-  curl -s "$1/releases/latest" | sed 's/.*href=".*tag.\(.*\)">redirected.*/\1/'
+  curl -Ls -o /dev/null -w "%{url_effective}" "$1/releases/latest" | sed 's/.*\///'
 }
 get_github_latest_release_file() {
   repoURL=$1
