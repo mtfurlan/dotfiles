@@ -77,6 +77,11 @@ setup_github() {
   echo "Add that to github"
   read -n 1 -s -r -p "Press any key to continue"
   echo ""
+  cat <<EOF >> ~/.gitconfiglocal
+
+[url "git@github.com:"]
+	insteadOf = https://github.com/
+EOF
   verify_github_remote
 }
 
@@ -129,12 +134,14 @@ update_tools() {
   wget -q -O ~/.local/bin/up "$(get_github_latest_release_file https://github.com/akavel/up up)"
   chmod +x ~/.local/bin/up
 
-  wget -q -O ~/.local/bin/diff-so-fancy https://raw.githubusercontent.com/so-fancy/diff-so-fancy/master/third_party/build_fatpack/diff-so-fancy
+  wget -q -O ~/.local/bin/diff-so-fancy "$(get_github_latest_release_file https://github.com/so-fancy/diff-so-fancy diff-so-fancy)"
   chmod +x ~/.local/bin/diff-so-fancy
+
   cat <<EOF > ~/.gitconfiglocal
 # this is a generated file by dotfiles setup.sh
-[core]
-	pager = diff-so-fancy | less --tabs=4 -RFX
+[pager]
+	diff = diff-so-fancy | less --tabs=4 -RFX
+	show = diff-so-fancy | less --tabs=4 -RFX
 
 [interactive]
 	diffFilter = diff-so-fancy --patch
