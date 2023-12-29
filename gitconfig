@@ -72,8 +72,7 @@
 	ff = only
 [init]
 	defaultBranch = main
-[url "git@github.com:"]
-	insteadOf = https://github.com/
+
 [credential "https://gist.github.com"]
 	helper =
 	helper = !/usr/bin/gh auth git-credential
