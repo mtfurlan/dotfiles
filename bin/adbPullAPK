@@ -1,0 +1,83 @@
+#!/bin/bash
+set -euo pipefail
+
+
+# shellcheck disable=SC2120
+help () {
+    # if arguments, print them
+    [ $# == 0 ] || echo "$*"
+
+  cat <<EOF
+Usage: $(basename "${BASH_SOURCE[0]}") [OPTION]... <branch> [repo]...
+  branch: name of branch to checkout
+  repos: optional list of repos to act upon, otherwise uses the file 'repos'
+Available options:
+  -h, --help       display this help and exit
+  -b               create branch
+EOF
+
+    # if args, exit 1 else exit 0
+    [ $# == 0 ] || exit 1
+    exit 0
+}
+
+msg() {
+    echo >&2 -e "${1-}"
+}
+
+die() {
+    local msg=$1
+    local code=${2-1} # default exit status 1
+    msg "$msg"
+    exit "$code"
+}
+
+# getopt short options go together, long options have commas
+TEMP=$(getopt -o h --long help -n "$0" -- "$@")
+#shellcheck disable=SC2181
+if [ $? != 0 ] ; then
+    die "something wrong with getopt"
+fi
+eval set -- "$TEMP"
+
+while true ; do
+    case "$1" in
+        -h|--help) help; exit 0; shift ;;
+        --) shift ; break ;;
+        *) die "issue parsing args, unexpected argument '$0'!" ;;
+    esac
+done
+
+targetAPK=${1:-}
+if [ -z "$targetAPK" ]; then
+    help "need to pass in target apk"
+fi
+
+
+apk=$(adb shell pm list packages | grep "$targetAPK" | sed 's/^package://')
+
+
+if [[ $(echo "$apk" | wc -l) -ge 2 ]]; then
+    msg "multiple matches, pick a better filter"
+    # shellcheck disable=SC2001
+    msg "$(echo "$apk" | sed 's/^/    /')"
+    exit 1
+fi
+
+read -r -p "is your apk $apk [Y/n] " response
+case "$response" in
+  [nN][oO]|[nN])
+      exit 0
+    ;;
+  [yY][eE][sS]|[yY]|'')
+    ;;
+  *)
+      die "unknown input"
+    ;;
+esac
+
+
+path=$(adb shell pm path "$apk" | grep base | sed 's/^package://')
+adb pull "$path" "$apk.apk"
+
+msg "your apk is now $(realpath "$apk.apk")"

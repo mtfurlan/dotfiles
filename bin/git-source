@@ -1,5 +1,6 @@
 #!/bin/bash
 set -euo pipefail
+#TODO: support linking to dirs
 
 # shellcheck disable=SC2120
 help () {
@@ -7,7 +8,7 @@ help () {
     [ $# == 0 ] || echo "$*"
 
   cat <<EOF
-Usage: $0 FILE [LINE NUMBER]
+Usage: $0 [FILE [LINE NUMBER]]
        $0
 Link to the online git file or repo, with optional line number
   -h, --help       display this help and exit
@@ -54,7 +55,7 @@ linkLine=0
 
 # get git remote URL
 # just picks the first
-if ! url=$(git config --get remote.origin.url); then
+if ! url=$(git config --get "remote.$(git remote | head -n1).url"); then
     die "no remote?"
 fi
 

@@ -90,7 +90,7 @@ runs=0
 run(){
     echo "${Blu}runFile: run: $runs${None}"
     ret=0
-    $command || ret=$?
+    eval "$command" || ret=$?
     # shellcheck disable=SC2181
     if [[ "$ret" -ne 0 ]]; then
         echo "${Red}runFile: command return code $ret${None}"
@@ -114,7 +114,7 @@ run # run at startup
 inotifywait -q -e close_write,moved_to -r --exclude "\.git" -m "$targetFileDir" |
 while read -r directory events filename; do
     #shellcheck disable=SC2053
-    if [[ "$filename" =~ $filter ]]; then
+    if [[ "$filename" == $filter ]]; then
         run
     fi
 done

@@ -69,7 +69,7 @@ echo "scanning for port $port in $subnet"
 
 
 # shellcheck disable=SC2024
-sudo nmap -Pn -oX - -p"$port" "$subnet" > /tmp/nmapOutput
+sudo nmap --max-parallelism 100 -Pn -oX - -p"$port" "$subnet" > /tmp/nmapOutput
 
 # TODO: mac address won't exist if we're across a subnet that doesn't pass stuff
 # This means host.address will be obect not array because fuck you
@@ -102,4 +102,5 @@ while read -r line ; do
 done <<< "$resolved"
 
 # format as TSV, tell column to *only* work on tabs and don't merge empty values
-echo "$hosts" | jq -r '(["IP", "HOSTANME", "MAC", "VENDOR"]), (.[] | [.ip, .hostname, .mac, .vendor]) | @tsv' | column -t -s $'\t'
+echo "$hosts"
+echo "$hosts" | jq -r '(["IP", "HOSTANME", "MAC", "VENDOR"]), (.[] | [.ip, .hostname, .mac, .vendor]) | @tsv' | column -nt -s $'\t'

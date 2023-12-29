@@ -1,0 +1,5 @@
+#!/bin/bash
+# Kill all steam instances
+pkill -9 steam
+# Kill all wine instances
+sudo wineserver -l

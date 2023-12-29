@@ -1,0 +1,4 @@
+#!/bin/bash
+# https://gist.github.com/AstraLuma/c9392dec5d2f7a301b4650aa0762bd39
+git reset --soft "$(git commit-tree -p HEAD -m "boop" "$(git cat-file -p HEAD | grep tree | head -n 1 | awk '{print $2}')")"
+git push

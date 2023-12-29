@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# shellcheck disable=SC2120
+help () {
+    # if arguments, print them
+    [ $# == 0 ] || echo "$*"
+
+  cat <<EOF
+Usage: $(basename "${BASH_SOURCE[0]}")
+    Delete merged branches
+Available options:
+  -h, --help       display this help and exit
+  -n, --dry-run    list branches, don't delete
+EOF
+
+    # if args, exit 1 else exit 0
+    [ $# == 0 ] || exit 1
+    exit 0
+}
+
+
+# getopt short options go together, long options have commas
+TEMP=$(getopt -o hn --long help,dry-run -n "$0" -- "$@")
+#shellcheck disable=SC2181
+if [ $? != 0 ] ; then
+    die "something wrong with getopt"
+fi
+eval set -- "$TEMP"
+
+dryRun=false
+while true ; do
+    case "$1" in
+        -n|--dry-run) dryRun=true ; shift ;;
+        -h|--help) help ; exit 0 ; shift ;;
+        --) shift ; break ;;
+        *) die "issue parsing args, unexpected argument '$0'!" ;;
+    esac
+done
+
+branch=$(git rev-parse --abbrev-ref HEAD)
+git fetch --prune
+# if current branch has a remote, run git pull
+if git ls-remote origin "$branch" | grep "$branch" >/dev/null ; then
+    git pull >/dev/null
+fi
+
+branchData=$(git for-each-ref --format '%(refname) %(upstream:track) %(upstream)' refs/heads)
+
+upstreamGone=$(echo "$branchData" | awk '$2 == "[gone]" {sub("refs/heads/", "", $1); print $1}')
+if [[ "$upstreamGone" == "*$branch*" ]]; then
+echo "on a deleted upstream branch, checking out develop"
+git checkout develop
+fi
+
+if [ -n "${upstreamGone}" ]; then
+  echo "branches with deleted upstream:"
+  # shellcheck disable=SC2001
+  echo "$upstreamGone" | sed 's/^/    /'
+    if [ ! "$dryRun" = true ]; then
+      echo "$upstreamGone" | xargs git branch -D
+    fi
+fi
