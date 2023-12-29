@@ -6,11 +6,11 @@
 	excludesfile = ~/.gitglobalignore
 
 
-[includeIf "gitdir:~/tome/"]
-	path = ~/tome/.gitconfig
+[includeIf "gitdir:~/work/"]
+	path = ~/work/.gitconfig
 
 [include]
-	    path = ~/.gitconfiglocal
+	path = ~/.gitconfiglocal
 
 [color]
 	ui = true
