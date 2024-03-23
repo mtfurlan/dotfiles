@@ -72,7 +72,7 @@ extract () {
 }
 
 function dsf {
-    git diff --no-index "$@"
+    diff -u "$@" | diff-so-fancy | less -RF
 }
 
 alias gitaddWithoutWhitespace='git diff -U0 -w --no-color | git apply --cached --ignore-whitespace --unidiff-zero -'
