@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+# Download Vim plugins.
+if command -v git >/dev/null; then
+    vim +PluginInstall +qall
+fi

@@ -1,5 +1,11 @@
 # Dotfiles
 
+TODO:
+* vim plugin symlinking/installing
+  * maybe switch to a different plugin manager?
+* finish moving stuff from setup.sh
+* vim cache dir configs
+
 ## Random tools
 * tig: interactive git history viewer
   * apt
