@@ -12,8 +12,6 @@ alias pj='ps j'
 
 alias df='df -h'
 
-alias tmux='tmux -2'
-
 alias glog="git log --graph --all --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative"
 alias gpush="git push --force-with-lease"
 
@@ -85,8 +83,35 @@ function lyricsGrep {
     find . -type f \( -name "*.flac" -o -name "*.mp3" \) -print0 | xargs -0 exiftool -artist -album -title -lyrics -lyrics-xxx | grep -E -i -B3 "$@"
 }
 
+# https://stackoverflow.com/a/29613573
+# SYNOPSIS
+#   quoteRe <text>
+# shellcheck disable=SC1003
+quoteRe() { sed -e 's/[^^]/[&]/g; s/\^/\\^/g; $!a\'$'\n''\\n' <<<"$1" | tr -d '\n'; }
+
+# SYNOPSIS
+#  quoteSubst <text>
+quoteSubst() {
+  IFS= read -d '' -r < <(sed -e ':a' -e '$!{N;ba' -e '}' -e 's/[&/\]/\\&/g; s/\n/\\&/g' <<<"$1")
+  printf %s "${REPLY%$'\n'}"
+}
+
+
 function replace {
     search=${1:-}
     replace=${2:-}
-    grep -lRZ "$search" . | xargs -0 -l sed -i "s/$search/$replace/"
+    ag -l0 "$search" | xargs -0 -l -- sed -i "s/$search/$replace/g"
 }
+function replaceSimple {
+    search=${1:-}
+    replace=${2:-}
+    ag -l0 "$(quoteRe "$search")" | xargs -0 -l -- sed -i "s/$(quoteRe "$search")/$(quoteSubst "$replace")/g"
+}
+
+alias copyToClipboard="xclip -sel clip"
+
+function iperfThing {
+    iperf -c 10.4.4.20 -P 30 -t30 | sed -n "s/\[SUM\]/$1/p" >> ~/tmp/iperflog
+}
+
+alias mylog='echo -e "\n\n$(date --iso=date):\n" >> ~/sync/general/notes/log && vim -c ":$" ~/sync/general/notes/log'

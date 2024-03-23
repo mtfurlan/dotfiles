@@ -115,7 +115,8 @@ change_dofiles_remote() {
 
 
 update_tools() {
-  sudo pip3 install --upgrade thefuck yq
+  pipx install thefuck
+  pipx install yq
 
   # shellcheck disable=SC2016
   installDebGH bat 'sharkdp/bat' '${PKG}_${VER}_${ARCH}.deb'
@@ -160,6 +161,9 @@ EOF
 
   wget -q -O ~/.local/bin/slackcat "$(get_github_latest_release_file "https://github.com/bcicen/slackcat" "slackcat-VER-linux-$arch" true)"
   chmod +x ~/.local/bin/slackcat
+
+  #curl --silent -L "$(get_github_latest_release_file "https://github.com/crate-ci/typos" "typos-VER-x86_64-unknown-linux-musl.tar.gz")" | tar xvz -C ~/.local/bin ./typos
+
 }
 
 install_tools() {

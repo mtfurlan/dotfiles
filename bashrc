@@ -25,7 +25,7 @@ shopt -s histappend
 
 # for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
 HISTSIZE=1000
-HISTFILESIZE=2000
+HISTFILESIZE=42000
 
 # check the window size after each command and, if necessary,
 # update the values of LINES and COLUMNS.
@@ -174,14 +174,14 @@ fi
 export GCC_COLORS='error=01;31:warning=01;35:note=01;36:caret=01;32:locus=01:quote=01'
 
 if ! shopt -oq posix; then
-	if [ -f /usr/share/bash-completion/bash_completion ]; then
+    if [ -f /usr/share/bash-completion/bash_completion ]; then
         # shellcheck disable=SC1091
         . /usr/share/bash-completion/bash_completion
     elif [ -f /etc/bash_completion ]; then
         # shellcheck disable=SC1091
         . /etc/bash_completion
-	fi
-	complete -cf sudo
+    fi
+    complete -cf sudo
 fi
 
 
@@ -215,3 +215,5 @@ trap 'preexec' DEBUG
 
 # try to set terminal title to hostname
 setTitle "$(hostname)"
+
+export MINICOM='-c on'

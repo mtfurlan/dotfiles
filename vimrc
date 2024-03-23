@@ -23,6 +23,7 @@ Plugin 'airblade/vim-gitgutter'
 Plugin 'mileszs/ack.vim'
 Plugin 'AndrewRadev/linediff.vim'
 Plugin 'chrisbra/csv.vim'
+Plugin 'embear/vim-foldsearch'
 let hostname = substitute(system('hostname'), '\n', '', '')
 if hostname == "boethiah"
   Plugin 'posva/vim-vue'
@@ -47,6 +48,56 @@ let mapleader = ","
 
 " insert tab character with shift tab
 :inoremap <S-Tab> <C-V><Tab>
+
+" ============= hex mode ===================
+" command! UnXXD %s/^\%(\x*:\)\? *\(\%(\x\+\%(\s\|$\)\)\+\)\%(.\{3,}\)\?/\1/ | %!xxd -r -p
+" ex command for toggling hex mode - define mapping if desired
+command -bar Hexmode call ToggleHex()
+
+" TODO: not quite 1:1 mapping
+
+nnoremap <C-H> :Hexmode<CR>
+inoremap <C-H> <Esc>:Hexmode<CR>
+vnoremap <C-H> :<C-U>Hexmode<CR>
+" helper function to toggle hex mode
+function ToggleHex()
+  " hex mode should be considered a read-only operation
+  " save values for modified and read-only for restoration later,
+  " and clear the read-only flag for now
+  let l:modified=&mod
+  let l:oldreadonly=&readonly
+  let &readonly=0
+  let l:oldmodifiable=&modifiable
+  let &modifiable=1
+  if !exists("b:editHex") || !b:editHex
+    " save old options
+    let b:oldft=&ft
+    let b:oldbin=&bin
+    " set new options
+    setlocal binary " make sure it overrides any textwidth, etc.
+    silent :e " this will reload the file without trickeries
+              "(DOS line endings will be shown entirely )
+    let &ft="xxd"
+    " set status
+    let b:editHex=1
+    " switch to hex editor
+    %!xxd -g1
+  else
+    " restore old options
+    let &ft=b:oldft
+    if !b:oldbin
+      setlocal nobinary
+    endif
+    " set status
+    let b:editHex=0
+    " return to normal editing
+    %!xxd -r -p
+  endif
+  " restore values for modified and read only state
+  let &mod=l:modified
+  let &readonly=l:oldreadonly
+  let &modifiable=l:oldmodifiable
+endfunction
 
 
 " https://github.com/skwp/dotfiles/blob/master/vimrc
@@ -130,6 +181,11 @@ let g:syntastic_mode_map = {
 " ===Nerdtree binding===
 map <C-n> :NERDTreeToggle<CR>
 let NERDTreeQuitOnOpen=1
+
+" ===EditorConfig===
+" To ensure that this plugin works well with Tim Pope's fugitive, use the
+" following patterns array:
+let g:EditorConfig_exclude_patterns = ['fugitive://.*']
 
 
 " ============== Display stuff ============
@@ -233,7 +289,10 @@ fun! StripTrailingWhitespaces()
 endfun
 command StripTrailing call StripTrailingWhitespaces()
 
-autocmd FileType typescript,javascript,html,css,perl,c,cpp,java,php,ruby,python autocmd BufWritePre <buffer> :call StripTrailingWhitespaces()
+augroup autoStripTrailing
+    autocmd!
+    autocmd FileType typescript,javascript,html,css,perl,c,cpp,java,php,ruby,python autocmd BufWritePre <buffer> :call StripTrailingWhitespaces()
+augroup END
 
 
 let g:gitgutter_enabled = 0
