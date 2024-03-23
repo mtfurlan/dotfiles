@@ -5,6 +5,7 @@ TODO:
   * maybe switch to a different plugin manager?
 * finish moving stuff from setup.sh
 * vim cache dir configs
+* bin
 
 ## Random tools
 * tig: interactive git history viewer
