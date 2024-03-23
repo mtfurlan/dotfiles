@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+version=${1-11}
+shift
+echo "building with gcc $version"
+( dir=$(basename "$(pwd)") && cd ../ && docker run --rm --user "$(id -u):$(id -g)" -v "$PWD":/workdir -w /workdir "gcc:$version" make -C "$dir" "$@" )

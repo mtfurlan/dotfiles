@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+version=${1-12}
+shift
+echo "building with clang $version"
+( dir=$(basename "$(pwd)") && cd ../ && docker run --rm --user "$(id -u):$(id -g)" -v "$PWD":/workdir -w /workdir --env CC=clang --env CXX=clang++ "silkeh/clang:$version" make -C "$dir" "$@" )
