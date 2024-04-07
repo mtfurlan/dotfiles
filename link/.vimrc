@@ -1,5 +1,7 @@
 set nocompatible
 filetype off
+set mouse=
+set ttymouse=
 
 set rtp+=~/.vim/bundle/Vundle.vim
 call vundle#begin()
@@ -11,7 +13,9 @@ Plugin 'vim-airline/vim-airline-themes'
 Plugin 'vim-latex/vim-latex'
 Plugin 'tpope/vim-sleuth'
 Plugin 'tpope/vim-fugitive'
+if ( has( 'python' ) || has( 'python3' ) )
 Plugin 'Valloric/MatchTagAlways'
+endif
 Plugin 'christoomey/vim-tmux-navigator'
 Plugin 'shime/vim-livedown' " markdown viewer
 Plugin 'scrooloose/syntastic'

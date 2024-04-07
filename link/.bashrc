@@ -5,9 +5,10 @@ case $- in
       *) return;;
 esac
 
-#enable/disable git info in PS1
-#override in localrc
-git_prompt=true
+function exists
+{
+    command -v $@ >/dev/null
+}
 
 export EDITOR=vim
 export VISUAL=vim
@@ -64,7 +65,7 @@ fi
 
 # https://github.com/nvbn/thefuck
 # defines 'fuck' as a command to fix the last command
-if builtin type -P "thefuck" &> /dev/null; then
+if exists thefuck ; then
     eval "$(thefuck --alias)"
 fi
 
@@ -75,13 +76,12 @@ fi
 
 # number of colors supported
 colors=0
-if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
-    # We have color support; assume it's compliant with Ecma-48
-    # (ISO/IEC-6429). (Lack of such support is extremely rare, and such
-    # a case would tend to support setf rather than setaf.)
-
-    #I dunno why tput colors 2 vs tput colors
-    colors=$(tput colors 2>/dev/null)
+if exists tput ; then
+    if tput setaf 1 >&/dev/null; then
+        colors=$(tput colors 2>/dev/null)
+    fi
+elif [[ "$TERM" == *"256color"* ]]; then
+    colors=256
 fi
 
 
@@ -106,44 +106,41 @@ function virtualenv_info
 VENV="\$(virtualenv_info)";
 
 
-export GIT_PS1_SHOWDIRTYSTATE=1           # '*'=unstaged, '+'=staged
-export GIT_PS1_SHOWSTASHSTATE=1           # '$'=stashed
-export GIT_PS1_SHOWUNTRACKEDFILES=1       # '%'=untracked
-export GIT_PS1_SHOWUPSTREAM="auto"     # 'u='=no difference, 'u+1'=ahead by 1 commit
-export GIT_PS1_STATESEPARATOR=" "
-export GIT_PS1_DESCRIBE_STYLE="describe"  # detached HEAD style:
-
 # This will limit the number of dirs to show in the PS1
 # tom@sanctum:/chroot/apache/usr/local/app-library/lib/App/Library/Class$ PROMPT_DIRTRIM=3
 # tom@sanctum:.../App/Library/Class$
-
 export PROMPT_DIRTRIM=5
 
+color() {
+    printf '\e[38;5;%dm' $1
+}
+reset() {
+    printf '\e[0m'
+}
 
 if [[ $colors -ge 8 ]]; then
     if [[ $colors -ge 256 ]]; then
-        Red="\[$(tput setaf 1)\]"
-        Gre="\[$(tput setaf 10)\]"
-        Blu="\[$(tput setaf 12)\]"
-        Cya="\[$(tput setaf 14)\]"
+        Red="$(color 1)"
+        Gre="$(color 10)"
+        Blu="$(color 12)"
+        Cya="$(color 14)"
         hostRangeStart=130
         hostRange=80
     else # 8 color
-        Red="\[$(tput setaf 1)\]"
-        Gre="\[$(tput setaf 2)\]"
-        Blu="\[$(tput setaf 4)\]"
-        Cya="\[$(tput setaf 6)\]"
+        Red="$(color 1)"
+        Gre="$(color 2)"
+        Blu="$(color 4)"
+        Cya="$(color 6)"
         hostRangeStart=1
         hostRange=7
     fi
-    None="\[$(tput sgr0)\]"
+    None=$(reset)
 
-    export GIT_PS1_SHOWCOLORHINTS=1
 
     # http://serverfault.com/a/425657/228348
     # use color range 130-210
     hostColorIndex=$(hostname | od | tr ' ' '\n' | awk "{total = total + \$1}END{print $hostRangeStart + (total % $hostRange)}")
-    hostColor="\[$(tput setaf "$hostColorIndex")\]"
+    hostColor="$(color "$hostColorIndex")"
 
     # debian chroot stuff copied from a debian /etc/skel/.bahsrc
     # \${?##0} shows the return code if nonzero
@@ -151,7 +148,14 @@ if [[ $colors -ge 8 ]]; then
     myFancyPS1Start="${debian_chroot:+($debian_chroot)}$Red\${?##0}$Cya$VENV$Gre\u@$hostColor\h:$Blu\w$None"
     myFancyPS1End="$None$ "
 
-    if [ "$git_prompt" = true ]; then
+    if exists __git_ps1 ; then
+        export GIT_PS1_SHOWCOLORHINTS=1
+        export GIT_PS1_SHOWDIRTYSTATE=1           # '*'=unstaged, '+'=staged
+        export GIT_PS1_SHOWSTASHSTATE=1           # '$'=stashed
+        export GIT_PS1_SHOWUNTRACKEDFILES=1       # '%'=untracked
+        export GIT_PS1_SHOWUPSTREAM="auto"        # 'u='=no difference, 'u+1'=ahead by 1 commit
+        export GIT_PS1_STATESEPARATOR=" "
+        export GIT_PS1_DESCRIBE_STYLE="describe"  # detached HEAD style:
         PROMPT_COMMAND='__git_ps1 "$myFancyPS1Start" "$myFancyPS1End"'
     else
         PS1="$myFancyPS1Start$myFancyPS1End"
@@ -162,7 +166,7 @@ else
 fi
 
 # enable color support of ls and also add handy aliases
-if which dircolors >/dev/null; then
+if exists dircolors ; then
     if [[ -f "$HOME/.dircolors" ]]; then
         eval "$(dircolors -b ~/.dircolors)"
     else
