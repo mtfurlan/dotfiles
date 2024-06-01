@@ -22,6 +22,8 @@ alias weatherGraph='curl v2.wttr.in?m'
 
 alias :e=vim
 
+alias stripExif="mogrify -strip"
+
 alias whatismyip4='curl -4 ifconfig.co 2>/dev/null'
 alias whatismyip6='curl -6 ifconfig.co 2>/dev/null'
 whatismyip()
@@ -97,11 +99,30 @@ quoteSubst() {
 }
 
 
+function unicodePoint {
+    # https://superuser.com/a/1019853/270114
+    echo -n "$1" |              # -n ignore trailing newline                     \
+    iconv -f utf8 -t utf32be |  # UTF-32 big-endian happens to be the code point \
+    xxd -p |                    # -p just give me the plain hex                  \
+    sed -r 's/^0+/0x/' |        # remove leading 0's, replace with 0x            \
+    xargs printf 'U+%04X\n'     # pretty print the code point
+}
+
+function battlebots {
+    file=$1
+    ep=$(basename "$file" | sed 's/.*S\([0-9]\{2\}\)E\([0-9]\{2\}\).*/s\1e\2/')
+    tmpfile="/tmp/battlebots_${ep}.mp4"
+    ffmpeg -i "$file" "$tmpfile"
+    aws s3api put-object --bucket scz --acl public-read --key "$(basename "$tmpfile")" --content-type video/mp4 --body "$tmpfile"
+    echo "https://scz.s3.amazonaws.com/battlebots_${ep}.mp4"
+}
+
 function replace {
     search=${1:-}
     replace=${2:-}
     ag -l0 "$search" | xargs -0 -l -- sed -i "s/$search/$replace/g"
 }
+
 function replaceSimple {
     search=${1:-}
     replace=${2:-}

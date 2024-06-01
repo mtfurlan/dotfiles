@@ -1,0 +1,2 @@
+#!/bin/bash
+adb shell -t 'run-as com.termux files/usr/bin/sh -lic "export PREFIX=/data/data/com.termux/files; export HOME=\$PREFIX/home; export PATH=\$PREFIX/usr/bin; export LD_PRELOAD=\$PREFIX/usr/lib/libtermux-exec.so; export SHELL=\$PREFIX/usr/bin/bash; cd \$HOME && \$PREFIX/usr/bin/bash -i"'

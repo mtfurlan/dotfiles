@@ -314,3 +314,8 @@ endfunction
 set fileformat=unix
 set fileformats=unix,dos
 "set nobinary
+
+
+" to show all whitespace tabs spaces
+":set listchars=eol:¬,tab:>·,trail:~,extends:>,precedes:<,space:␣
+":set list
