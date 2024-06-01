@@ -24,6 +24,7 @@ Plugin 'mileszs/ack.vim'
 Plugin 'AndrewRadev/linediff.vim'
 Plugin 'chrisbra/csv.vim'
 Plugin 'embear/vim-foldsearch'
+Plugin 'adi/vim-indent-rainbow'
 let hostname = substitute(system('hostname'), '\n', '', '')
 if hostname == "boethiah"
   Plugin 'posva/vim-vue'
@@ -247,6 +248,8 @@ cnoreabbrev AG Ack!
 " ================ Misc ===============
 " disable folding, was an issue in tex stuff
 set nofoldenable
+" TODO: replace/add to pastetoggle with
+" https://coderwall.com/p/if9mda/automatically-set-paste-mode-in-vim-when-pasting-in-insert-mode
 set pastetoggle=<F3>
 
 " Thing from robin for clipboard stuff
@@ -319,3 +322,7 @@ set fileformats=unix,dos
 " to show all whitespace tabs spaces
 ":set listchars=eol:¬,tab:>·,trail:~,extends:>,precedes:<,space:␣
 ":set list
+
+call togglerb#map("<F8>")
+let g:rainbow_colors_black= [ 135, 33, 112, 191, 42 ]
+let g:rainbow_colors_color= [ 226, 192, 195, 189, 225, 221 ]

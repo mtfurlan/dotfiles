@@ -1,8 +1,18 @@
 #!/bin/bash
 
-alias ls='ls -F --color=auto'
-alias ll='ls -lAhF --color=auto'
-alias la='ls -lAF --color=auto'
+if command -v lsd >/dev/null 2>&1; then
+    #TODO: if commit lsd also add ~/.config/lsd/config.yaml
+    lstool="lsd --icon never"
+else
+    lstool="ls"
+fi
+
+#shellcheck disable=SC2139
+alias ls="$lstool -F --color=auto"
+#shellcheck disable=SC2139
+alias ll="$lstool -lAhF --color=auto"
+#shellcheck disable=SC2139
+alias la="$lstool -lAF --color=auto"
 
 alias grep='grep --color=auto'
 alias fgrep='fgrep --color=auto'
