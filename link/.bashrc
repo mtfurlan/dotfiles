@@ -111,42 +111,42 @@ VENV="\$(virtualenv_info)";
 # tom@sanctum:.../App/Library/Class$
 export PROMPT_DIRTRIM=5
 
-color() {
-    printf '\e[38;5;%dm' $1
-}
-reset() {
-    printf '\e[0m'
-}
+
+# this doesn't work it causes line wrap weirdness
+# but not depending on tput was something I wanted once
+#color() {
+#    #printf '\e[38;5;%dm' $1
+#}
 
 if [[ $colors -ge 8 ]]; then
     if [[ $colors -ge 256 ]]; then
-        Red="$(color 1)"
-        Gre="$(color 10)"
-        Blu="$(color 12)"
-        Cya="$(color 14)"
+        Red="\[$(tput setaf 1)\]"
+        Gre="\[$(tput setaf 10)\]"
+        Blu="\[$(tput setaf 12)\]"
+        Cya="\[$(tput setaf 14)\]"
         hostRangeStart=130
         hostRange=80
     else # 8 color
-        Red="$(color 1)"
-        Gre="$(color 2)"
-        Blu="$(color 4)"
-        Cya="$(color 6)"
+        Red="\[$(tput setaf 1)\]"
+        Gre="\[$(tput setaf 2)\]"
+        Blu="\[$(tput setaf 4)\]"
+        Cya="\[$(tput setaf 6)\]"
         hostRangeStart=1
         hostRange=7
     fi
-    None=$(reset)
+    None="\[$(tput sgr0)\]"
 
 
     # http://serverfault.com/a/425657/228348
     # use color range 130-210
     hostColorIndex=$(hostname | od | tr ' ' '\n' | awk "{total = total + \$1}END{print $hostRangeStart + (total % $hostRange)}")
-    hostColor="$(color "$hostColorIndex")"
+    hostColor="\[$(tput setaf "$hostColorIndex")\]"
 
     # debian chroot stuff copied from a debian /etc/skel/.bahsrc
     # \${?##0} shows the return code if nonzero
     # VENV is a function that is either empty or the python virtualenv name
     myFancyPS1Start="${debian_chroot:+($debian_chroot)}$Red\${?##0}$Cya$VENV$Gre\u@$hostColor\h:$Blu\w$None"
-    myFancyPS1End="$None$ "
+    myFancyPS1End="$None\$ "
 
     if exists __git_ps1 ; then
         export GIT_PS1_SHOWCOLORHINTS=1
