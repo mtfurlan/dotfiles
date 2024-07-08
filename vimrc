@@ -332,3 +332,20 @@ set fileformats=unix,dos
 call togglerb#map("<F8>")
 let g:rainbow_colors_black= [ 135, 33, 112, 191, 42 ]
 let g:rainbow_colors_color= [ 226, 192, 195, 189, 225, 221 ]
+
+
+augroup myvimrc
+    au!
+    au BufWritePost .vimrc,_vimrc,vimrc,.gvimrc,_gvimrc,gvimrc so $MYVIMRC | if has('gui_running') | so $MYGVIMRC | endif
+augroup END
+
+function! GSourceFun(...)
+  if a:0
+    let res = system('git source ' . expand('%') . ' ' . line('.'))
+  else
+    let res = system('git source ' . expand('%'))
+  endif
+  let res = substitute(res, '\n$', '', '')
+  echo res
+endfunction
+command! -nargs=? GSource call GSourceFun(<f-args>)

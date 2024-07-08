@@ -40,18 +40,19 @@ eval set -- "$TEMP"
 
 while true ; do
     case "$1" in
-        -h|--help) help; exit 0; shift ;;
+        -h|--help) help; ;;
         --) shift ; break ;;
         *) die "issue parsing args, unexpected argument '$0'!" ;;
     esac
 done
 
-#if [[ $# -lt 1 ]]; then
-#    help
-#    exit 1
-#fi
+relFile=${1:-}
+if [ -n "$relFile" ]; then
+    # if we have file, cd to it so git commands work
+    cd "$(dirname "$relFile")"
+fi
 
-linkLine=0
+line=${2:-}
 
 # get git remote URL
 # just picks the first
@@ -64,48 +65,38 @@ lineStr=""
 if [[ $url == *"bitbucket.org"* ]]; then
     provider="bitbucket.org"
     urlThing="src"
-    if [[ $linkLine -ne 0 ]]; then
+    if [ -n "$line" ]; then
         lineStr="#lines-$line"
     fi
 elif [[ $url == *"github.com"* ]]; then
     provider="github.com"
     urlThing="blob"
-    if [[ $linkLine -ne 0 ]]; then
+    if [ -n "$line" ]; then
         lineStr="#L$line"
     fi
 else
     die "dunno what to do for $url"
 fi
 
-# parse remote URL (git@ or https://) to something like "tomesoftware/chad-db"
+# parse remote URL (git@ or https://) to "$owner/$repo"
 repo=$(echo "$url" | perl -pe 's#^(?:https|git)(?:://|@)(?:[^:/]*)(?:[:/])##; s/\.git$//')
 
-# if no args, just print repo url
-if [[ $# -lt 1 ]]; then
+# if no file, just print repo url
+if [ -z "$relFile" ]; then
     echo "https://$provider/$repo"
     exit 0
 fi
-
-relFile=$1
-if [[ ! -f $relFile ]]; then
-    die "file '$relFile' does not exist"
-fi
-
-if [[ $# -eq 2 ]]; then
-    line=$2
-    linkLine=1
-fi
-
-# get file relative to git root
-gitRoot=$(git rev-parse --show-toplevel)
-fullFile=$(realpath "$relFile") # get full path of relative filepath
-file=${fullFile#"$gitRoot/"} # remove prefix of $gitRoot/
 
 # get current branch or commit hash
 # https://stackoverflow.com/a/1593487/2423187
 head=$(git symbolic-ref -q HEAD || true)
 head=${head##refs/heads/}
 head=${head:-$(git rev-parse HEAD)}
+
+# get file relative to git root
+fullFile=$(realpath "$relFile") # get full path of relative filepath
+gitRoot=$(git rev-parse --show-toplevel)
+file=${fullFile#"$gitRoot/"} # remove prefix of $gitRoot/
 
 #echo "provider: $provider"
 #echo "repo: $repo"
