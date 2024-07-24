@@ -280,7 +280,6 @@ if get(g:, '_has_set_default_indent_settings', 0) == 0
   let g:_has_set_default_indent_settings = 1
 endif
 
-autocmd BufNewFile,BufRead *.mjs set filetype=javascript
 
 " Don't hide characters in markdown
 let g:markdown_syntax_conceal = 0
