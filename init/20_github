@@ -1,11 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
-# TODO: change to ed25519 also in git config
-GITHUB_KEY_TYPE=rsa
+GITHUB_KEY_TYPE=ed25519
 
 github_remote_works() {
-    ssh -T -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no git@github.com 2>&1 | grep -q "successfully authenticated" 
+    echo "$(ssh -T -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no git@github.com 2>&1)" | grep -q "successfully authenticated"
 }
 
 setup_github() {
@@ -18,14 +17,14 @@ setup_github() {
             return
             ;;
     esac
-    ssh-keygen -t "$GITHUB_KEY_TYPE" -N '' -f  "~/.ssh/github_$GITHUB_KEY_TYPE"
-    cat "~/.ssh/github_$GITHUB_KEY_TYPE".pub
+    ssh-keygen -t "$GITHUB_KEY_TYPE" -N '' -f  ~/.ssh/"github_$GITHUB_KEY_TYPE"
+    cat ~/.ssh/"github_${GITHUB_KEY_TYPE}.pub"
     echo "Add that to github"
     read -n 1 -s -r -p "Press any key to continue"
     echo ""
 }
 
-if [ ! -f "~/.ssh/github_$GITHUB_KEY_TYPE" ]; then
+if [ ! -f ~/.ssh/"github_$GITHUB_KEY_TYPE" ]; then
     read -r -p "Setup github keys? [y/N] " response
     case "$response" in
         [yY][eE][sS]|[yY])
@@ -34,15 +33,17 @@ if [ ! -f "~/.ssh/github_$GITHUB_KEY_TYPE" ]; then
         *) exit 0 ;;
     esac
 fi
-if  github_remote_works ; then
+
+if github_remote_works ; then
+    echo "github key works"
     if ! grep -q "pretend everything is git not https" ~/.gitconfiglocal ; then
         cat <<EOF >> ~/.gitconfiglocal
 # pretend everything is git not https
 [url "git@github.com:"]
     insteadOf = https://github.com/
 EOF
+        echo "using ssh instead of https forevermore"
     fi
-    echo "github works, using ssh instead of https forevermore"
 else
     echo "github keys aren't setup properly, good luck"
     exit 1
