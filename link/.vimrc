@@ -113,20 +113,22 @@ set showmode "Show current mode down the bottom
 set visualbell "No sounds
 set autoread "Reload files changed outside vim
 
+" === put temp files somewhere else ===
+silent !mkdir -p ~/.cache/vim/backup > /dev/null 2>&1
+silent !mkdir -p ~/.cache/vim/swap > /dev/null 2>&1
+silent !mkdir -p ~/.cache/vim/undo > /dev/null 2>&1
+silent !mkdir -p ~/.cache/vim/netrw_home > /dev/null 2>&1
+set backupdir=~/.cache/vim/backup/
+set directory=~/.cache/vim/swap/
+set undodir=~/.cache/vim/undo/
+let g:netrw_home = expand('~/.cache/vim/netrw_home')
+
 " ================ Persistent Undo ==================
 " Keep undo history across sessions, by storing in file.
 " Only works all the time.
 if has('persistent_undo')
   set undofile
 endif
-
-" ===Remvoe silly temp files ===
-silent !mkdir ~/.vim/backup > /dev/null 2>&1
-silent !mkdir ~/.vim/swap > /dev/null 2>&1
-silent !mkdir ~/.vim/undo > /dev/null 2>&1
-set backupdir=~/.vim/backup/
-set directory=~/.vim/swap/
-set undodir=~/.vim/undo/
 
 " ============== Plugin Configs ===============
 " ===The vimairline plugin stuff===
