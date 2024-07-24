@@ -1,56 +1,99 @@
 #!/bin/bash
 set -euo pipefail
 
+# shellcheck disable=SC2120
 help () {
-# if arguments, print them
-    [ $# == 0 ] || echo $*
+    # if arguments, print them
+    [ $# == 0 ] || echo "$*"
 
-    echo "Usage: $0 keyname username hostname"
-    echo "       $0 keyname username@hostname"
-    echo "       $0 keyname hostname"
-    echo "be warned, the arg parsing isn't very robust"
+  cat <<EOF
+Usage: $(basename "${BASH_SOURCE[0]}") [OPTION]... keyname username hostname
+       $(basename "${BASH_SOURCE[0]}") [OPTION]... username@hostname
+       $(basename "${BASH_SOURCE[0]}") [OPTION]... hostname
+  make a key and try to install it on hostname
+
+  just runs 'ssh-keygen -t ed25519 -N '' -f \$keyfile'
+Available options:
+  -c, --config     try to add to ssh-config
+  -h, --help       display this help and exit
+EOF
 
     # if args, exit 1 else exit 0
     [ $# == 0 ] || exit 1
     exit 0
 }
 
-if [ "$#" -lt 2 ]; then
-    help "not enough args"
-fi
+msg() {
+    echo >&2 -e "${1-}"
+}
 
-name=$1
+die() {
+    local msg=$1
+    local code=${2-1} # default exit status 1
+    msg "$msg"
+    exit "$code"
+}
+
+# getopt short options go together, long options have commas
+TEMP=$(getopt -o hc --long help,config -n "$0" -- "$@")
+#shellcheck disable=SC2181
+if [ $? != 0 ] ; then
+    die "something wrong with getopt"
+fi
+eval set -- "$TEMP"
+
+config=false
+while true ; do
+    case "$1" in
+        -h|--help) help  ;;
+        -c|--config) config=true ; shift ;;
+        --) shift ; break ;;
+        *) die "issue parsing args, unexpected argument '$0'!" ;;
+    esac
+done
+
+
+#if [ "$#" -lt 2 ]; then
+#    help "not enough args"
+#fi
+
 
 if [ "$#" -eq 3 ]; then                 # $0 keyname username hostname
+    keyname=$1
     user=$2
     hostname=$3
-elif [ "$2" == *"@"* ]; then            # $0 keyname username@hostname
-    user=$(echo $2 | cut -d'@' -f1)
-    hostname=$(echo $2 | cut -d'@' -f2)
+elif [[ "$1" == *"@"* ]]; then            # $0 keyname username@hostname
+    user=$(echo "$1" | cut -d'@' -f1)
+    hostname=$(echo "$1" | cut -d'@' -f2)
+    keyname=$hostname
 else                                    # $0 keyname hostname
     user='mark'
     hostname=$2
+    keyname=$hostname
 fi
 
 
-keyfile=~/.ssh/${name}_ed25519
+keyfile=~/.ssh/${keyname}_ed25519
 
 echo "making key $keyfile for $user@$hostname"
 
-read -p "Press enter to continue"
-ssh-keygen -t ed25519 -N '' -f $keyfile
+read -rp "Press enter to continue"
+ssh-keygen -t ed25519 -N '' -f "$keyfile"
 
-cat >> ~/.ssh/config << EOF
 
-Host $name
+if [ "$config" = true ]; then
+    cat >> ~/.ssh/config << EOF
+
+Host $keyname
     Hostname $hostname
     User $user
     IdentityFile $keyfile
 EOF
+fi
 
 read -r -p "Try to install key with ssh-copy-id [y/N] " response
 case "$response" in
   [yY][eE][sS]|[yY])
-    ssh-copy-id -i $keyfile $name
+    ssh-copy-id -i "$keyfile" "$keyname"
     ;;
 esac

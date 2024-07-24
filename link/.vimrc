@@ -32,13 +32,7 @@ endif
 Plug 'tmux-plugins/vim-tmux'
 Plug 'christoomey/vim-tmux-navigator'
 Plug 'shime/vim-livedown' " markdown viewer
-if v:version >= 800
-  Plug 'w0rp/ale'
-  let g:airline#extensions#ale#enabled = 1
-else
-  Plug 'vim-syntastic/syntastic'
-  let g:airline#extensions#syntastic#enabled = 1
-endif
+"Plug 'w0rp/ale' TODO evaluate
 Plug 'scrooloose/nerdtree'
 Plug 'editorconfig/editorconfig-vim'
 Plug 'Xuyuanp/nerdtree-git-plugin'
@@ -48,6 +42,8 @@ Plug 'mileszs/ack.vim'
 Plug 'AndrewRadev/linediff.vim'
 Plug 'chrisbra/csv.vim'
 Plug 'embear/vim-foldsearch'
+Plug 'adi/vim-indent-rainbow'
+
 let hostname = substitute(system('hostname'), '\n', '', '')
 if hostname == "boethiah"
   Plug 'posva/vim-vue'
@@ -133,6 +129,7 @@ set showcmd "Show incomplete cmds down the bottom
 set showmode "Show current mode down the bottom
 set visualbell "No sounds
 set autoread "Reload files changed outside vim
+set hidden
 
 " === put temp files somewhere else ===
 silent !mkdir -p ~/.cache/vim/backup > /dev/null 2>&1
@@ -163,7 +160,7 @@ let g:airline_theme='wombat'
 
 let g:airline#extensions#tabline#enabled = 1
 let g:airline#extensions#tabline#buffer_nr_show = 1
-set hidden
+"let g:airline#extensions#ale#enabled = 1
 
 " ===vim markdown preview settings===
 let g:livedown_browser = "google-chrome"
@@ -185,25 +182,6 @@ let g:tmuxline_preset = {
     \}
 \}
 
-" === Syntastic ===
-set statusline+=%#warningmsg#
-set statusline+=%{SyntasticStatuslineFlag()}
-set statusline+=%*
-
-
-let g:syntastic_always_populate_loc_list = 1
-let g:syntastic_auto_loc_list = 1
-let g:syntastic_check_on_open = 1
-let g:syntastic_check_on_wq = 0
-let g:syntastic_javascript_checkers=['eslint']
-if executable('node_modules/.bin/eslint')
-  let b:syntastic_javascript_eslint_exec = 'node_modules/.bin/eslint'
-endif
-
-let g:syntastic_mode_map = {
-    \ "mode": "passive",
-    \ "active_filetypes": ["sh"],
-    \ "passive_filetypes": [] }
 
 " ===Nerdtree binding===
 map <C-n> :NERDTreeToggle<CR>
@@ -256,9 +234,15 @@ augroup END
 
 
 " ================ Wiki ===============
-let g:vimwiki_list = [{'path': '~/sync/general/notes/vimwiki/', 'syntax': 'markdown', 'ext': '.md'}]
+let g:vimwiki_list = [{'path': '~/sync/general/notes/', 'syntax': 'markdown', 'ext': '.md'}]
 let g:vimwiki_folding='expr'
 let g:vimwiki_url_maxsave = 0
+let g:vimwiki_diary_months = {
+      \ 1: '01 January', 2: '02 February', 3: '03 March',
+      \ 4: '04 April', 5: '05 May', 6: '06 June',
+      \ 7: '07 July', 8: '08 August', 9: '09 September',
+      \ 10: '10 October', 11: '11 November', 12: '12 December'
+      \ }
 
 " =============== Search ==============
 if executable('ag')
@@ -275,6 +259,8 @@ cnoreabbrev AG Ack!
 " ================ Misc ===============
 " disable folding, was an issue in tex stuff
 set nofoldenable
+" TODO: replace/add to pastetoggle with
+" https://coderwall.com/p/if9mda/automatically-set-paste-mode-in-vim-when-pasting-in-insert-mode
 set pastetoggle=<F3>
 
 " Thing from robin for clipboard stuff
@@ -342,3 +328,29 @@ endfunction
 set fileformat=unix
 set fileformats=unix,dos
 "set nobinary
+
+
+" to show all whitespace tabs spaces
+":set listchars=eol:¬,tab:>·,trail:~,extends:>,precedes:<,space:␣
+":set list
+
+call togglerb#map("<F8>")
+let g:rainbow_colors_black= [ 135, 33, 112, 191, 42 ]
+let g:rainbow_colors_color= [ 226, 192, 195, 189, 225, 221 ]
+
+
+augroup myvimrc
+    au!
+    au BufWritePost .vimrc,_vimrc,vimrc,.gvimrc,_gvimrc,gvimrc so $MYVIMRC | if has('gui_running') | so $MYGVIMRC | endif
+augroup END
+
+function! GSourceFun(...)
+  if a:0
+    let res = system('git source ' . expand('%') . ' ' . line('.'))
+  else
+    let res = system('git source ' . expand('%'))
+  endif
+  let res = substitute(res, '\n$', '', '')
+  echo res
+endfunction
+command! -nargs=? GSource call GSourceFun(<f-args>)

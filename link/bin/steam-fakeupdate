@@ -39,7 +39,7 @@ eval set -- "$TEMP"
 
 while true ; do
     case "$1" in
-        -h|--help) help; exit 0; shift ;;
+        -h|--help) help; ;;
         --) shift ; break ;;
         *) die "issue parsing args, unexpected argument '$0'!" ;;
     esac

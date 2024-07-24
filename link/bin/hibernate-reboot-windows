@@ -1,0 +1,18 @@
+#!/bin/bash
+set -e
+
+# https://gist.github.com/setzer22/77b1dc4b226fdf2dee83e6399e30558b
+
+# /lib/systemd/system-sleep/hibernate-reboot-disable:
+# !/bin/bash
+# if [ -f /etc/systemd/sleep.conf.bak ] && [ $1 == "post" ] && [ $2 == "hibernate" ]; then
+#       mv /etc/systemd/sleep.conf.bak /etc/systemd/sleep.conf
+# fi
+
+if [ -f /etc/systemd/sleep.conf ]; then
+    sudo mv /etc/systemd/sleep.conf /etc/systemd/sleep.conf.bak
+fi
+printf "[Sleep]\nHibernateMode=reboot\n" | sudo tee /etc/systemd/sleep.conf
+
+sudo efibootmgr --bootnext 0011
+sudo systemctl hibernate
