@@ -11,12 +11,43 @@ setup dotfiles
 HELP
 exit; fi
 
+# overview of how this works
+# we call do_stuff $action at the bottom
+# actions are
+# * copy
+# ** copy into ~/
+# * link
+# ** link into ~/
+# * config
+# ** link into ~/.config
+# * init
+# ** run scripts
+#
+# do stuff will look for the following functions:
+# * ${action}_header
+# ** prints something when doing this
+# ** no args
+# * ${action}_test
+# ** returns 0 to skip and string reason, else does action
+# ** args of "$file" "$dest"
+# * ${action}_dest
+# ** return path to override base copy destination
+# ** arg of original destination (~/foo in the case of $action/foo)
+# * ${action}_do
+# ** actually does the action
+# * ${action}_files
+# ** override the list of files to work with instead of $repo/$action/*
+# ** takes arg of the original file list
+
+
+
 export DOTFILES=~/.dotfiles
 
 # Logging stuff.
 function e_header()   { echo -e "\n\033[1m$*\033[0m"; }
 function e_success()  { echo -e " \033[1;32m✔\033[0m  $*"; }
 function e_error()    { echo -e " \033[1;31m✖\033[0m  $*"; }
+function e_warn()     { echo -e " \033[1;33m✖\033[0m  $*"; }
 function e_arrow()    { echo -e " \033[1;34m➜\033[0m  $*"; }
 
 die() {
@@ -37,12 +68,12 @@ function is_dotfiles_bin() {
     [[ "$(basename "$0" 2>/dev/null)" == dotfiles ]] || return 1
 }
 
-
 function init_do() {
     e_header "Running $(basename "$2")"
     #shellcheck disable=SC1090
     "$2"
 }
+
 
 # Copy files.
 function copy_header() { e_header "Copying files into home directory"; }
@@ -51,6 +82,8 @@ function copy_test() {
         echo "same file"
     elif [[ "$1" -ot "$2" ]]; then
         echo "destination file newer"
+    else
+        return 1;
     fi
 }
 function copy_do() {
@@ -83,31 +116,33 @@ function config_do() {
 
 # Copy, link, init, etc.
 function do_stuff() {
+    action=$1
     local base dest skip
-    local files=("$DOTFILES"/"$1"/*)
+    local files=("$DOTFILES"/"${action}"/*)
     # TODO: what does this line do and why does shellcheck not like it
     #shellcheck disable=SC2207
-    [[ $(declare -f "$1_files") ]] && files=($("$1_files" "${files[@]}"))
+    [[ $(declare -f "${action}_files") ]] && files=($("${action}_files" "${files[@]}"))
     # No files? abort.
     if (( ${#files[@]} == 0 )); then return; fi
     # Run _header function only if declared.
-    [[ $(declare -f "$1_header") ]] && "$1_header"
+    [[ $(declare -f "${action}_header") ]] && "${action}_header"
     # Iterate over files.
     for file in "${files[@]}"; do
         base="$(basename "$file")"
         # Get dest path.
-        if [[ $(declare -f "$1_dest") ]]; then
-            dest="$("$1_dest" "$base")"
+        if [[ $(declare -f "${action}_dest") ]]; then
+            dest="$("${action}_dest" "$base")"
         else
             dest="$HOME/$base"
         fi
         # Run _test function only if declared.
-        if [[ $(declare -f "$1_test") ]]; then
+        if [[ $(declare -f "${action}_test") ]]; then
             # If _test function returns a string, skip file and print that message.
             ret=0;
-            skip=$("$1_test" "$file" "$dest") || ret=$?
+            skip=$("${action}_test" "$file" "$dest") || ret=$?
+            echo "skip: $skip; ret: $ret"
             if [[ "$ret" -eq 0 ]]; then
-                e_error "Skipping ~/$base, $skip."
+                e_warn "Skipping ~/$base, $skip."
                 continue
             fi
             # Destination file already exists in ~/. Back it up!
@@ -122,7 +157,7 @@ function do_stuff() {
             fi
         fi
         # Do stuff.
-        "$1_do" "$base" "$file"
+        "${action}_do" "$base" "$file"
     done
 }
 
