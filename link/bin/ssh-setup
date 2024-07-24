@@ -53,9 +53,9 @@ while true ; do
 done
 
 
-#if [ "$#" -lt 2 ]; then
-#    help "not enough args"
-#fi
+if [ "$#" -eq 0 ]; then
+    help
+fi
 
 
 if [ "$#" -eq 3 ]; then                 # $0 keyname username hostname
@@ -80,6 +80,14 @@ echo "making key $keyfile for $user@$hostname"
 read -rp "Press enter to continue"
 ssh-keygen -t ed25519 -N '' -f "$keyfile"
 
+if [ ! "$config" = true ]; then
+    read -r -p "install to config? [Y/n] " response
+    case "$response" in
+        [yY][eE][sS]|[yY]|'')
+            config=true
+            ;;
+    esac
+fi
 
 if [ "$config" = true ]; then
     cat >> ~/.ssh/config << EOF
@@ -93,7 +101,7 @@ fi
 
 read -r -p "Try to install key with ssh-copy-id [y/N] " response
 case "$response" in
-  [yY][eE][sS]|[yY])
-    ssh-copy-id -i "$keyfile" "$keyname"
-    ;;
+    [yY][eE][sS]|[yY])
+        ssh-copy-id -i "$keyfile" "$keyname"
+        ;;
 esac
