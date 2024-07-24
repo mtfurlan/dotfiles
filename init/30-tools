@@ -1,0 +1,153 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+get_github_latest_release() {
+  curl -Ls -o /dev/null -w "%{url_effective}" "$1/releases/latest" | sed 's/.*\///'
+}
+
+get_github_latest_release_file() {
+  repoURL=$1
+  releaseFilename=$2
+  remove_v=${3:-false}
+  ver=$(get_github_latest_release "$repoURL")
+  #do we remove v from ver in filename
+  if [ "$remove_v" = true ]; then
+    ver=${ver/v/}
+  fi
+  releaseFilename=${releaseFilename/VER/$ver}
+  echo "$repoURL/releases/download/$ver/$releaseFilename"
+}
+
+installDebGH() {
+  package=$1
+  repo=$2
+  debString=$3
+
+  echo
+  echo "installing or updating $package from github/$repo"
+
+  version=$(curl -Ls -o /dev/null -w '%{url_effective}' "https://github.com/$repo/releases/latest" | sed 's/.*tag\/v\?//')
+  installedVersion=$(dpkg -s "$package" 2>/dev/null | grep Version | sed 's/Version: //') || true
+
+
+  if [ -z "$version" ]; then
+    echo "Can't fetch version for $package"
+    return 1
+  fi
+
+  if [ "$installedVersion" != "$version" ]; then
+    echo "VERSION MISMATCH: $package version: $version, installedVersion: $installedVersion"
+
+    #check arch
+    case "$(uname -m)" in
+      "x86_64")
+        arch="amd64" ;;
+      *)
+        echo "can't install $package for this arch($(uname -m)), fix setup script"
+        return 1
+        ;;
+    esac
+
+    #actually install
+    # shellcheck disable=SC2016
+    deb=$(echo "$debString" | PKG="$package" VER="$version" ARCH="$arch" envsubst '${PKG} ${VER} ${ARCH}')
+
+    wget -q -O "/tmp/$deb" "https://github.com/$repo/releases/download/v$version/$deb"
+    echo "installing $deb"
+    sudo dpkg -i "/tmp/$deb"
+  fi
+}
+
+cloneAndPull() {
+  repo=$1
+  dir=$2
+
+  echo
+
+  if [ ! -d "$dir" ]; then
+    echo "cloning $repo to $dir"
+    git clone --depth 1 "$repo" "$dir" >/dev/null
+  else
+    echo "updating git $dir - $repo"
+    pushd "$dir" >/dev/null || die "failed to pusd $dir for cloneAndPull $repo"
+    # shellcheck disable=SC2046
+    latestTag="$(git describe --tags $(git rev-list --tags --max-count=1) 2>/dev/null || true)"
+    if [ -n "$latestTag" ]; then
+      echo "checking out '$latestTag'"
+      git checkout "$latestTag" &>/dev/null
+    else
+      curBranch=$(git rev-parse --abbrev-ref HEAD)
+      echo "pulling '$curBranch'"
+      git pull >/dev/null
+    fi
+    popd >/dev/null || die "failed to popd cloneAndPull $repo"
+  fi
+}
+
+update_tools() {
+  pipx install thefuck
+  pipx install yq
+
+  # shellcheck disable=SC2016
+  installDebGH bat 'sharkdp/bat' '${PKG}_${VER}_${ARCH}.deb'
+  # shellcheck disable=SC2016
+  installDebGH gh 'cli/cli' '${PKG}_${VER}_linux_${ARCH}.deb'
+  gh completion > ~/.gh-completion
+
+  cloneAndPull https://github.com/junegunn/fzf.git ~/src/fzf
+  ~/src/fzf/install --completion --key-bindings --no-update-rc >/dev/null
+
+  cloneAndPull https://github.com/mtfurlan/rpisetup.git ~/src/rpisetup
+  mkdir -p ~/.local/bin
+  ln -s ~/src/rpisetup/rpisetup ~/.local/bin/rpisetup 2>/dev/null || true
+
+  mkdir -p ~/.local/bin
+  wget -q -O ~/.local/bin/up "$(get_github_latest_release_file https://github.com/akavel/up up)"
+  chmod +x ~/.local/bin/up
+
+  wget -q -O ~/.local/bin/diff-so-fancy "$(get_github_latest_release_file https://github.com/so-fancy/diff-so-fancy diff-so-fancy)"
+  chmod +x ~/.local/bin/diff-so-fancy
+
+  cat <<EOF > ~/.gitconfiglocal
+# this is a generated file by dotfiles setup.sh
+[pager]
+	diff = diff-so-fancy | less --tabs=4 -RFX
+	show = diff-so-fancy | less --tabs=4 -RFX
+
+[interactive]
+	diffFilter = diff-so-fancy --patch
+EOF
+
+
+  #check arch
+  case "$(uname -m)" in
+    "x86_64")
+      arch="amd64" ;;
+    *)
+      echo "dunno how to handle arch($(uname -m)), fix setup script"
+      return 1
+      ;;
+  esac
+
+  wget -q -O ~/.local/bin/slackcat "$(get_github_latest_release_file "https://github.com/bcicen/slackcat" "slackcat-VER-linux-$arch" true)"
+  chmod +x ~/.local/bin/slackcat
+
+  #curl --silent -L "$(get_github_latest_release_file "https://github.com/crate-ci/typos" "typos-VER-x86_64-unknown-linux-musl.tar.gz")" | tar xvz -C ~/.local/bin ./typos
+
+}
+
+install_tools() {
+  set -x
+  sudo apt-get install python3-dev python3-pip python3-setuptools jq \
+    vim-nox silversearcher-ag tree bash-completion pipx lsd sl
+  set +x
+
+  update_tools
+}
+
+read -r -p "install extra tools(thefuck, yq, fzf, up)? [y/N] " response
+case "$response" in
+  [yY][eE][sS]|[yY])
+    install_tools
+    ;;
+esac

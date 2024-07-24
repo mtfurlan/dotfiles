@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+function e_warn()     { echo -e " \033[1;33m✖\033[0m  $*"; }
+
+if [ -a /etc/debian_version ]; then
+    if ! grep --quiet non-free /etc/apt/sources.list; then
+      echo "/etc/apt/sources.list doesn't have nonfree"
+      echo "exit when you're happy"
+      bash --rcfile <(echo "PS1='subshell > '") -i
+    fi
+    # TODO: check for installer mount, I forget what it leaves these days
+    if grep --quiet "^deb cdrom" /etc/apt/sources.list; then
+      echo "/etc/apt/sources.list is still useing installer mount"
+      echo "exit when you're happy"
+      bash --rcfile <(echo "PS1='subshell > '") -i
+    fi
+    sudo apt-get update
+    set -x
+    sudo apt-get install vim-tiny tmux git curl wget
+    set +x
+else
+    e_warn "not debian, doing nothing"
+fi
