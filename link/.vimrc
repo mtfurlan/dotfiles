@@ -3,41 +3,62 @@ filetype off
 set mouse=
 set ttymouse=
 
-set rtp+=~/.vim/bundle/Vundle.vim
-call vundle#begin()
+" https://github.com/junegunn/vim-plug
+call plug#begin('~/.vim/plugged')
+" from cowboy to investigate later
+"Plug 'tpope/vim-sensible'                                                       " Core config
+"Plug 'rafi/awesome-vim-colorschemes'                                            " Color schemes
+"Plug 'tpope/vim-surround'                                                       " Quotes / parens / tags
+"Plug 'tpope/vim-rhubarb'                                                        " Github helper
+"Plug 'tpope/vim-vinegar'                                                        " File browser (?)
+"Plug 'tpope/vim-repeat'                                                         " Enable . repeat in plugins
+"Plug 'tpope/vim-commentary'                                                     " (gcc) Better commenting
+"Plug 'tpope/vim-unimpaired'                                                     " Pairs of mappings with [ ]
+"Plug 'tpope/vim-eunuch'                                                         " Unix helpers
+"Plug 'nathanaelkane/vim-indent-guides'                                          " (,ig) Visible indent guides
+"Plug 'krisajenkins/vim-pipe'                                                    " (,r) Run a buffer through a command
+"Plug 'krisajenkins/vim-postgresql-syntax'
 
-Plugin 'VundleVim/Vundle.vim'
-Plugin 'edkolev/tmuxline.vim'
-Plugin 'vim-airline/vim-airline'
-Plugin 'vim-airline/vim-airline-themes'
-Plugin 'vim-latex/vim-latex'
-Plugin 'tpope/vim-sleuth'
-Plugin 'tpope/vim-fugitive'
+Plug 'elzr/vim-json'
+Plug 'edkolev/tmuxline.vim'
+Plug 'vim-airline/vim-airline'
+Plug 'vim-airline/vim-airline-themes'
+Plug 'vim-latex/vim-latex'
+Plug 'tpope/vim-sleuth'
+Plug 'tpope/vim-fugitive'
 if ( has( 'python' ) || has( 'python3' ) )
-Plugin 'Valloric/MatchTagAlways'
+Plug 'Valloric/MatchTagAlways'
 endif
-Plugin 'christoomey/vim-tmux-navigator'
-Plugin 'shime/vim-livedown' " markdown viewer
-Plugin 'scrooloose/syntastic'
-Plugin 'scrooloose/nerdtree'
-Plugin 'editorconfig/editorconfig-vim'
-Plugin 'Xuyuanp/nerdtree-git-plugin'
-Plugin 'vimwiki/vimwiki'
-Plugin 'airblade/vim-gitgutter'
-Plugin 'mileszs/ack.vim'
-Plugin 'AndrewRadev/linediff.vim'
-Plugin 'chrisbra/csv.vim'
-Plugin 'embear/vim-foldsearch'
+Plug 'tmux-plugins/vim-tmux'
+Plug 'christoomey/vim-tmux-navigator'
+Plug 'shime/vim-livedown' " markdown viewer
+if v:version >= 800
+  Plug 'w0rp/ale'
+  let g:airline#extensions#ale#enabled = 1
+else
+  Plug 'vim-syntastic/syntastic'
+  let g:airline#extensions#syntastic#enabled = 1
+endif
+Plug 'scrooloose/nerdtree'
+Plug 'editorconfig/editorconfig-vim'
+Plug 'Xuyuanp/nerdtree-git-plugin'
+Plug 'vimwiki/vimwiki'
+Plug 'airblade/vim-gitgutter'
+Plug 'mileszs/ack.vim'
+Plug 'AndrewRadev/linediff.vim'
+Plug 'chrisbra/csv.vim'
+Plug 'embear/vim-foldsearch'
 let hostname = substitute(system('hostname'), '\n', '', '')
 if hostname == "boethiah"
-  Plugin 'posva/vim-vue'
-  Plugin 'udalov/kotlin-vim'
-  Plugin 'hashivim/vim-terraform'
-  Plugin 'google/vim-searchindex'
-  Plugin 'leafgarland/typescript-vim'
+  Plug 'posva/vim-vue'
+  Plug 'udalov/kotlin-vim'
+  Plug 'hashivim/vim-terraform'
+  Plug 'google/vim-searchindex'
+  Plug 'leafgarland/typescript-vim'
 endif
 
-call vundle#end()
+call plug#end()
+
 filetype plugin indent on
 
 let mapleader = ","
@@ -187,6 +208,7 @@ let g:syntastic_mode_map = {
 " ===Nerdtree binding===
 map <C-n> :NERDTreeToggle<CR>
 let NERDTreeQuitOnOpen=1
+let NERDTreeShowHidden = 1
 
 " ===EditorConfig===
 " To ensure that this plugin works well with Tim Pope's fugitive, use the

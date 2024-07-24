@@ -1,3 +1,4 @@
-*.swp
 bin/syncthing.x64
 backups
+/link/.vim/plugged
+/link/.vim/autoload

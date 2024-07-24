@@ -4,7 +4,7 @@ set -euo pipefail
 GITHUB_KEY_TYPE=ed25519
 
 github_remote_works() {
-    echo "$(ssh -T -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no git@github.com 2>&1)" | grep -q "successfully authenticated"
+    echo "$(ssh -T -o StrictHostKeyChecking=accept-new git@github.com 2>&1)" | grep -q "successfully authenticated"
 }
 
 setup_github() {
