@@ -3,6 +3,7 @@
 	email = mark@fur.land
 [core]
 	editor = vim
+	excludesfile = ~/.gitignore_global
 
 
 [includeIf "gitdir:~/work/"]
