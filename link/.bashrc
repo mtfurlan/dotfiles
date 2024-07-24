@@ -40,29 +40,6 @@ shopt -s globstar
 set -o vi
 
 
-#allow machine specific config
-if [ -r ~/.localrc ]; then
-    # shellcheck disable=SC1090
-    . ~/.localrc
-fi
-
-# Alias
-if [ -r ~/.aliasrc ]; then
-    # shellcheck disable=SC1090
-    . ~/.aliasrc
-fi
-
-# fzf
-if [ -r ~/.fzf.bash ]; then
-    # shellcheck disable=SC1090
-    . ~/.fzf.bash
-fi
-
-if [ -r ~/.gh-completion ]; then
-    # shellcheck disable=SC1090
-    . ~/.gh-completion
-fi
-
 # https://github.com/nvbn/thefuck
 # defines 'fuck' as a command to fix the last command
 if exists thefuck ; then
@@ -217,7 +194,30 @@ preexec() {
 }
 trap 'preexec' DEBUG
 
+export MINICOM='-c on'
+
+#allow machine specific config
+if [ -r ~/.localrc ]; then
+    # shellcheck disable=SC1090
+    . ~/.localrc
+fi
+
+# Alias
+if [ -r ~/.aliasrc ]; then
+    # shellcheck disable=SC1090
+    . ~/.aliasrc
+fi
+
+# fzf
+if [ -r ~/.fzf.bash ]; then
+    # shellcheck disable=SC1090
+    . ~/.fzf.bash
+fi
+
+if [ -r ~/.gh-completion ]; then
+    # shellcheck disable=SC1090
+    . ~/.gh-completion
+fi
+
 # try to set terminal title to hostname
 setTitle "$(hostname)"
-
-export MINICOM='-c on'
