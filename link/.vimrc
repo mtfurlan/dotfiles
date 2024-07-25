@@ -42,7 +42,6 @@ Plug 'mileszs/ack.vim'
 Plug 'AndrewRadev/linediff.vim'
 Plug 'chrisbra/csv.vim'
 Plug 'embear/vim-foldsearch'
-Plug 'adi/vim-indent-rainbow'
 
 let hostname = substitute(system('hostname'), '\n', '', '')
 if hostname == "boethiah"
@@ -332,11 +331,6 @@ set fileformats=unix,dos
 " to show all whitespace tabs spaces
 ":set listchars=eol:¬,tab:>·,trail:~,extends:>,precedes:<,space:␣
 ":set list
-
-call togglerb#map("<F8>")
-let g:rainbow_colors_black= [ 135, 33, 112, 191, 42 ]
-let g:rainbow_colors_color= [ 226, 192, 195, 189, 225, 221 ]
-
 
 augroup myvimrc
     au!
