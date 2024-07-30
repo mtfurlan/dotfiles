@@ -23,7 +23,8 @@ Plug 'elzr/vim-json'
 Plug 'edkolev/tmuxline.vim'
 Plug 'vim-airline/vim-airline'
 Plug 'vim-airline/vim-airline-themes'
-Plug 'vim-latex/vim-latex'
+" fucks with <C-J>
+"Plug 'vim-latex/vim-latex'
 Plug 'tpope/vim-sleuth'
 Plug 'tpope/vim-fugitive'
 if ( has( 'python' ) || has( 'python3' ) )
@@ -32,7 +33,7 @@ endif
 Plug 'tmux-plugins/vim-tmux'
 Plug 'christoomey/vim-tmux-navigator'
 Plug 'shime/vim-livedown' " markdown viewer
-"Plug 'w0rp/ale' TODO evaluate
+Plug 'dense-analysis/ale'
 Plug 'scrooloose/nerdtree'
 Plug 'editorconfig/editorconfig-vim'
 Plug 'Xuyuanp/nerdtree-git-plugin'
@@ -76,9 +77,10 @@ command -bar Hexmode call ToggleHex()
 
 " TODO: not quite 1:1 mapping
 
-nnoremap <C-H> :Hexmode<CR>
-inoremap <C-H> <Esc>:Hexmode<CR>
-vnoremap <C-H> :<C-U>Hexmode<CR>
+" C-H taken by tmux nav
+"nnoremap <C-H> :Hexmode<CR>
+"inoremap <C-H> <Esc>:Hexmode<CR>
+"vnoremap <C-H> :<C-U>Hexmode<CR>
 " helper function to toggle hex mode
 function ToggleHex()
   " hex mode should be considered a read-only operation
@@ -159,7 +161,13 @@ let g:airline_theme='wombat'
 
 let g:airline#extensions#tabline#enabled = 1
 let g:airline#extensions#tabline#buffer_nr_show = 1
-"let g:airline#extensions#ale#enabled = 1
+let g:airline#extensions#ale#enabled = 1
+
+let g:ale_lint_on_text_changed = 'never'
+let g:ale_lint_on_enter = 0
+let g:ale_set_signs = 0
+"let g:ale_set_highlights = 0
+let g:ale_open_list = 1
 
 " ===vim markdown preview settings===
 let g:livedown_browser = "google-chrome"
@@ -332,6 +340,7 @@ set fileformats=unix,dos
 ":set listchars=eol:¬,tab:>·,trail:~,extends:>,precedes:<,space:␣
 ":set list
 
+" reload vimrc on save
 augroup myvimrc
     au!
     au BufWritePost .vimrc,_vimrc,vimrc,.gvimrc,_gvimrc,gvimrc so $MYVIMRC | if has('gui_running') | so $MYGVIMRC | endif
