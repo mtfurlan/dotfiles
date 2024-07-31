@@ -102,5 +102,4 @@ while read -r line ; do
 done <<< "$resolved"
 
 # format as TSV, tell column to *only* work on tabs and don't merge empty values
-echo "$hosts"
-echo "$hosts" | jq -r '(["IP", "HOSTANME", "MAC", "VENDOR"]), (.[] | [.ip, .hostname, .mac, .vendor]) | @tsv' | column -nt -s $'\t'
+echo "$hosts" | jq -r '(["IP", "HOSTANME", "MAC", "VENDOR"]), (.[] | [.ip, .hostname, .mac, .vendor]) | @tsv' | column --table -nt -s $'\t' || echo "$hosts" | jq -r '(["IP", "HOSTANME", "MAC", "VENDOR"]), (.[] | [.ip, .hostname, .mac, .vendor]) | @tsv'
