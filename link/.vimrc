@@ -43,6 +43,7 @@ Plug 'mileszs/ack.vim'
 Plug 'AndrewRadev/linediff.vim'
 Plug 'chrisbra/csv.vim'
 Plug 'embear/vim-foldsearch'
+Plug 'wellle/context.vim'
 
 let hostname = substitute(system('hostname'), '\n', '', '')
 if hostname == "boethiah"
