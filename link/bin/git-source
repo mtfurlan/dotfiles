@@ -50,6 +50,7 @@ relFile=${1:-}
 if [ -n "$relFile" ]; then
     # if we have file, cd to it so git commands work
     cd "$(dirname "$relFile")"
+    relFile=$(basename "$relFile")
 fi
 
 line=${2:-}
