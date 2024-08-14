@@ -164,11 +164,13 @@ let g:airline#extensions#tabline#enabled = 1
 let g:airline#extensions#tabline#buffer_nr_show = 1
 let g:airline#extensions#ale#enabled = 1
 
-let g:ale_lint_on_text_changed = 'never'
+let g:ale_lint_on_text_changed = 0
+let g:ale_lint_on_insert_leave = 0
 let g:ale_lint_on_enter = 0
 let g:ale_set_signs = 0
 "let g:ale_set_highlights = 0
 let g:ale_open_list = 1
+let g:ale_virtualtext_cursor = 'current'
 
 " ===vim markdown preview settings===
 let g:livedown_browser = "google-chrome"
