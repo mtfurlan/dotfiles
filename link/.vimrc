@@ -203,6 +203,9 @@ let NERDTreeShowHidden = 1
 " following patterns array:
 let g:EditorConfig_exclude_patterns = ['fugitive://.*']
 
+" elzr/vim-json don't hide quotes
+let g:vim_json_syntax_conceal = 0
+
 
 " ============== Display stuff ============
 syntax on
