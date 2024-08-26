@@ -144,4 +144,9 @@ function iperfThing {
     iperf -c 10.4.4.20 -P 30 -t30 | sed -n "s/\[SUM\]/$1/p" >> ~/tmp/iperflog
 }
 
-alias mylog='echo -e "\n\n$(date --iso=date):\n" >> ~/sync/general/notes/log && vim -c ":$" ~/sync/general/notes/log'
+function daysBetween {
+    a=${1:-}
+    b=${2:-}
+    format=${3:-%Y-%m-%d}
+    python -c "import datetime; print((datetime.datetime.strptime('$a', '$format') - datetime.datetime.strptime('$b', '$format')).days)"
+}
