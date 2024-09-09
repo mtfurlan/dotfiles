@@ -14,6 +14,12 @@ export EDITOR=vim
 export VISUAL=vim
 export PATH=~/bin:~/local/bin:~/.local/bin:/sbin:/usr/sbin:/usr/local/sbin:$PATH
 
+#allow machine specific config
+if [ -r ~/.localrc ]; then
+    # shellcheck disable=SC1090
+    . ~/.localrc
+fi
+
 # disable history expansion, ecclamation marks are useful sometimes
 set +H
 
@@ -196,10 +202,10 @@ trap 'preexec' DEBUG
 
 export MINICOM='-c on'
 
-#allow machine specific config
-if [ -r ~/.localrc ]; then
+#allow machine specific config overrides
+if [ -r ~/.localrc-override ]; then
     # shellcheck disable=SC1090
-    . ~/.localrc
+    . ~/.localrc-override
 fi
 
 # Alias
