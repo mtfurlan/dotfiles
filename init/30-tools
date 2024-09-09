@@ -107,8 +107,9 @@ update_tools() {
   wget -q -O ~/.local/bin/diff-so-fancy "$(get_github_latest_release_file https://github.com/so-fancy/diff-so-fancy diff-so-fancy)"
   chmod +x ~/.local/bin/diff-so-fancy
 
-  cat <<EOF > ~/.gitconfiglocal
-# this is a generated file by dotfiles setup.sh
+  if ! grep -q "use dsf" ~/.gitconfiglocal ; then
+    cat <<EOF >> ~/.gitconfiglocal
+# use dsf
 [pager]
 	diff = diff-so-fancy | less --tabs=4 -RFX
 	show = diff-so-fancy | less --tabs=4 -RFX
@@ -116,6 +117,7 @@ update_tools() {
 [interactive]
 	diffFilter = diff-so-fancy --patch
 EOF
+  fi
 
 
   #check arch
