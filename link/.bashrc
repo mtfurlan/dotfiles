@@ -214,10 +214,5 @@ if [ -r ~/.fzf.bash ]; then
     . ~/.fzf.bash
 fi
 
-if [ -r ~/.gh-completion ]; then
-    # shellcheck disable=SC1090
-    . ~/.gh-completion
-fi
-
 # try to set terminal title to hostname
 setTitle "$(hostname)"
