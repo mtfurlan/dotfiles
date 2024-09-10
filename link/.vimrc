@@ -276,9 +276,11 @@ set nofoldenable
 " https://coderwall.com/p/if9mda/automatically-set-paste-mode-in-vim-when-pasting-in-insert-mode
 set pastetoggle=<F3>
 
-" Thing from robin for clipboard stuff
-" Don't think it works
-set clipboard=unnamedplus
+" disable system clipboard stuff
+set clipboard=
+
+" :reg will display all registers
+:nnoremap "p :reg <bar> exec 'normal! "'.input('>').'p'<CR>
 
 " auto-complete thing
 set wildmenu
