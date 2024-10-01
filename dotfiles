@@ -1,18 +1,28 @@
 #!/usr/bin/env bash
 # Copyright (c) 2014 "Cowboy" Ben Alman
-#https://github.com/cowboy/dotfiles
+# https://github.com/cowboy/dotfiles
 # Licensed under the MIT license.
 # http://benalman.com/about/license/
-set -euo pipefail
 
-if [[ $# -gt 0 ]] && [[ "$1" == "-h" || "$1" == "--help" ]]; then cat <<HELP
-Usage: $(basename "$0")
-setup dotfiles
-HELP
-exit; fi
 
-# overview of how this works
-# we call do_stuff $action at the bottom
+# changes from cowboy/dotfiles:
+# * init files are run not sourced
+# * don't fuck with sudoers file
+# * remove osx specific stuff
+# * call via manual clone than run, don't handle cloning this repo
+# * shellcheck stuff
+# * documenting what functions exist for each a
+# * removed the menu, might bring it back, or bring back the sind menu
+# * removed os detection cause it was only osx or ubuntu (going to bring it back
+#   sometime)
+# * removed unused bash array functions
+# * sane date formats (`+%Y_%m_%d-%H_%M_%S` -> `+%Y-%m-%d_%H:%M:%S`, I think it
+#   was done for filesystem reasons but I only use functional filesystems)
+
+# overview of how this works:
+# we define actions, and actions have functions in the format of
+# $action_$function and they are dynamically called by the do_stuff function
+#
 # actions are
 # * copy
 # ** copy into ~/
@@ -40,6 +50,13 @@ exit; fi
 # ** takes arg of the original file list
 
 
+set -euo pipefail
+
+if [[ $# -gt 0 ]] && [[ "$1" == "-h" || "$1" == "--help" ]]; then cat <<HELP
+Usage: $(basename "$0")
+setup dotfiles
+HELP
+exit; fi
 
 export DOTFILES=~/.dotfiles
 
@@ -102,7 +119,10 @@ function link_do() {
 }
 
 # Link config files.
-function config_header() { e_header "Linking files into ~/.config directory"; }
+function config_header() {
+    e_header "Linking files into ~/.config directory"
+    mkdir -p ~/.config
+}
 function config_dest() {
     echo "$HOME/.config/$base"
 }
@@ -119,13 +139,17 @@ function do_stuff() {
     action=$1
     local base dest skip
     local files=("$DOTFILES"/"${action}"/*)
+
     # TODO: what does this line do and why does shellcheck not like it
     #shellcheck disable=SC2207
     [[ $(declare -f "${action}_files") ]] && files=($("${action}_files" "${files[@]}"))
+
     # No files? abort.
     if (( ${#files[@]} == 0 )); then return; fi
+
     # Run _header function only if declared.
     [[ $(declare -f "${action}_header") ]] && "${action}_header"
+
     # Iterate over files.
     for file in "${files[@]}"; do
         base="$(basename "$file")"

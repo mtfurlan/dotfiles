@@ -1,5 +1,10 @@
 # Dotfiles
 
+These are my dotfiles
+
+It is currently a heavily modified version of
+[cowboy/dotfiles](https://github.com/cowboy/dotfiles)
+
 TODO:
 * https://github.com/steven-omaha/pacdef
 
