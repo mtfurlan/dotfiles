@@ -26,7 +26,8 @@ TODO:
 * slackcat: send files or test to slack from the command line
   * https://github.com/bcicen/slackcat
 
-## mate clock date format
+## manual config stuff
+### mate clock date format
 * `dconf-editor`, `org / mate / panel / objects / clock / prefs`
 * Change `format` to "custom"
 * `custom-format` to
@@ -34,8 +35,23 @@ TODO:
   %F | %a %b | %T
   ```
 
-## automounting disks
+### automounting disks
 * Disable mate automounting: `gsettings set org.mate.media-handling automount false`
 * Install [udiskie](https://github.com/coldfix/udiskie)
   * `sudo apt install udiskie`
   * autostart `udiskie --no-automount`
+
+## Other dotfile managers
+### my history
+* 2015 [cowboy/dotfiles](https://github.com/cowboy/dotfiles)
+* 2017 [justone/dfm](https://github.com/justone/dfm)
+  * perl script inside repo, I don't really remember much about it
+* 2018 started adding on my own init bash scripts
+* 2019 [thoughtbot/rcm](https://github.com/thoughtbot/rcm)
+  * worked but controlling exactly what got linked was annoying
+  * I was installing via apt which was annoying
+* 2024 back to cowboy/dotfiles but modified
+
+### not tried
+* https://github.com/one-bash/one.bash
+  * interesting plugin system for aliases that maybe have help?
