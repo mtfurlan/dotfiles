@@ -21,11 +21,7 @@ TODO:
 * slackcat: send files or test to slack from the command line
   * https://github.com/bcicen/slackcat
 
-## Thinkpad-specific
-* https://github.com/teleshoes/tpacpi-bat
-* https://github.com/morgwai/tpbat-utils-acpi
-
-## Clock date format
+## mate clock date format
 * `dconf-editor`, `org / mate / panel / objects / clock / prefs`
 * Change `format` to "custom"
 * `custom-format` to

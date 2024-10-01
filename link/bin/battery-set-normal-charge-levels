@@ -1,0 +1,7 @@
+#!/bin/sh
+# /etc/sudoers.d/tlp.sudoers
+#   %sudo   ALL=NOPASSWD:/sbin/tlp
+# /etc/tlp.d/10-default-thresh.conf
+#   START_CHARGE_THRESH_BAT0=50
+#   STOP_CHARGE_THRESH_BAT0=60
+sudo tlp start

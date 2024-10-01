@@ -1,0 +1,4 @@
+#!/bin/sh
+echo "start charging at $(cat /sys/class/power_supply/BAT0/charge_control_start_threshold)";
+echo "stop charging at $(cat /sys/class/power_supply/BAT0/charge_control_end_threshold)";
+
