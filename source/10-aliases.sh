@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if command -v lsd >/dev/null 2>&1; then
+if exists lsd; then
     lstool="lsd --icon never"
 else
     lstool="ls"
@@ -35,6 +35,7 @@ alias stripExif="mogrify -strip"
 
 alias whatismyip4='curl -4 ifconfig.co 2>/dev/null'
 alias whatismyip6='curl -6 ifconfig.co 2>/dev/null'
+
 whatismyip()
 {
     ipv4=$(whatismyip4)
@@ -45,7 +46,6 @@ whatismyip()
 alias duc="du --max-depth=1 -ha | sort -rh | sed 's/\.\///' | sed /^0/d"
 
 mkcd () { mkdir -p "$@" && cd "$@" || echo "failed to cd '$*'?"; }
-
 
 gcd()
 {
@@ -86,10 +86,6 @@ function dsf {
 
 alias gitaddWithoutWhitespace='git diff -U0 -w --no-color | git apply --cached --ignore-whitespace --unidiff-zero -'
 
-function setTitle {
-    echo -en "\033]0;$*\007"
-}
-
 function lyricsGrep {
     find . -type f \( -name "*.flac" -o -name "*.mp3" \) -print0 | xargs -0 exiftool -artist -album -title -lyrics -lyrics-xxx | grep -E -i -B3 "$@"
 }
@@ -106,7 +102,6 @@ quoteSubst() {
   IFS= read -d '' -r < <(sed -e ':a' -e '$!{N;ba' -e '}' -e 's/[&/\]/\\&/g; s/\n/\\&/g' <<<"$1")
   printf %s "${REPLY%$'\n'}"
 }
-
 
 function unicodePoint {
     # https://superuser.com/a/1019853/270114
@@ -139,10 +134,6 @@ function replaceSimple {
 }
 
 alias copyToClipboard="xclip -sel clip"
-
-function iperfThing {
-    iperf -c 10.4.4.20 -P 30 -t30 | sed -n "s/\[SUM\]/$1/p" >> ~/tmp/iperflog
-}
 
 function daysBetween {
     a=${1:-}
