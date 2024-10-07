@@ -1,6 +1,6 @@
 [user]
-	name = Mark Furland
-	email = mark@fur.land
+	name = Mara Furland
+	email = mara@fur.land
 [core]
 	editor = vim
 	excludesfile = ~/.gitignore_global
