@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -euo pipefail
 # Copyright (c) 2014 "Cowboy" Ben Alman
 # https://github.com/cowboy/dotfiles
 # Licensed under the MIT license.
@@ -6,6 +7,7 @@
 
 
 # changes from cowboy/dotfiles:
+# * take actions to run as optional arguments
 # * init files are run not sourced
 # * don't fuck with sudoers file
 # * remove osx specific stuff
@@ -46,14 +48,6 @@
 # ** takes arg of the original file list
 
 
-set -euo pipefail
-
-if [[ $# -gt 0 ]] && [[ "$1" == "-h" || "$1" == "--help" ]]; then cat <<HELP
-Usage: $(basename "$0")
-setup dotfiles
-HELP
-exit; fi
-
 export DOTFILES=~/.dotfiles
 
 # Logging stuff.
@@ -62,6 +56,25 @@ function e_success()  { echo -e " \033[1;32m✔\033[0m  $*"; }
 function e_error()    { echo -e " \033[1;31m✖\033[0m  $*"; }
 function e_warn()     { echo -e " \033[1;33m✖\033[0m  $*"; }
 function e_arrow()    { echo -e " \033[1;34m➜\033[0m  $*"; }
+
+# shellcheck disable=SC2120
+h () {
+    # if arguments, print them
+    [ $# == 0 ] || e_error "$*"
+
+  cat <<EOF
+Usage: $(basename "${BASH_SOURCE[0]}") [OPTION]... [ACTION]...
+  setup dotfiles
+  optionally only perform specific actions
+Available options:
+  -h, --help       display this help and exit
+EOF
+
+    # if args, exit 1 else exit 0
+    [ $# == 0 ] || exit 1
+    exit 0
+}
+
 
 msg() {
     echo >&2 -e "${1-}"
@@ -190,6 +203,16 @@ function _prompt_menu_add() {
     done
     [[ ! "$match" && "$state" == 1 || "$keep" ]] || return
     _prompt_menu_result=("${_prompt_menu_result[@]}" "${menu_options[i]}")
+}
+
+# is needle in haystack
+# needle
+# haystack...
+function inArray() {
+    # https://stackoverflow.com/a/28032613
+    # bug: can match multiple, for example inArray "foo bar" "foo" "bar"
+    needle=$1; shift
+    echo "${@}" | grep -qow "$needle"
 }
 
 
@@ -332,7 +355,46 @@ function do_stuff() {
     done
 }
 
-# Enough with the functions, let's do stuff.
+###########################################
+#           DO STUFF
+###########################################
+# getopt short options go together, long options have commas
+TEMP=$(getopt -o h --long help -n "$0" -- "$@")
+#shellcheck disable=SC2181
+if [ $? != 0 ] ; then
+    die "something wrong with getopt"
+fi
+eval set -- "$TEMP"
+
+while true ; do
+    case "$1" in
+        -h|--help) h ;;
+        --) shift ; break ;;
+        *) die "issue parsing args, unexpected argument '$0'!" ;;
+    esac
+done
+
+default_actions=(copy link config init)
+actions=()
+if [ "$#" -eq 0 ]; then
+    actions=("${default_actions[@]}")
+else
+    # if user passed actions, we want to select the chosen actions in order
+
+    # validate actions chosen
+    for a in "$@"; do
+        if ! inArray "$a" "${default_actions[@]}"; then
+            h "'$a' is not a valid action"
+        fi
+    done
+
+    # add chosen actions
+    for a in "${default_actions[@]}"; do
+        if inArray "$a" "$@"; then
+            actions+=("$a")
+        fi
+    done
+fi
 
 # Set the prompt delay to be longer for the very first run.
 export prompt_delay=5; is_dotfiles_bin || prompt_delay=15
@@ -379,10 +441,11 @@ backup_dir="$DOTFILES/backups/$(date "+%Y-%m-%d_%H:%M:%S")/"
 backup=
 
 # Execute code for each file in these subdirectories.
-do_stuff copy
-do_stuff link
-do_stuff config
-do_stuff init
+msg "running ${actions[*]}"
+for a in "${actions[@]}"; do
+    do_stuff "$a"
+done
+
 
 # Alert if backups were made.
 if [[ "$backup" ]]; then
