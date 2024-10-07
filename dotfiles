@@ -9,19 +9,15 @@
 # * init files are run not sourced
 # * don't fuck with sudoers file
 # * remove osx specific stuff
-# * call via manual clone than run, don't handle cloning this repo
+# * so many documentation for functions and what this script does
 # * shellcheck stuff
-# * documenting what functions exist for each a
-# * removed the menu, might bring it back, or bring back the sind menu
-# * removed os detection cause it was only osx or ubuntu (going to bring it back
-#   sometime)
 # * removed unused bash array functions
 # * sane date formats (`+%Y_%m_%d-%H_%M_%S` -> `+%Y-%m-%d_%H:%M:%S`, I think it
-#   was done for filesystem reasons but I only use functional filesystems)
+#   was done for filesystem reasons but I value readability more)
 
 # overview of how this works:
 # we define actions, and actions have functions in the format of
-# $action_$function and they are dynamically called by the do_stuff function
+# $action_$function and they are dynamically called by the "do_stuff $action"
 #
 # actions are
 # * copy
@@ -67,6 +63,9 @@ function e_error()    { echo -e " \033[1;31m✖\033[0m  $*"; }
 function e_warn()     { echo -e " \033[1;33m✖\033[0m  $*"; }
 function e_arrow()    { echo -e " \033[1;34m➜\033[0m  $*"; }
 
+msg() {
+    echo >&2 -e "${1-}"
+}
 die() {
     local msg=$1
     local code=${2-1} # default exit status 1
@@ -83,6 +82,154 @@ checkInstalled() {
 # Test if this script was run via the "dotfiles" bin script (vs. via curl/wget)
 function is_dotfiles_bin() {
     [[ "$(basename "$0" 2>/dev/null)" == dotfiles ]] || return 1
+}
+
+
+# OS detection
+# need an is_$os function for each one
+function is_osx() {
+    [[ "$OSTYPE" =~ ^darwin ]]
+}
+function is_debian() {
+    [[ "$OSTYPE" =~ ^linux ]] && [ -f /etc/debian_version ]
+}
+
+# return name of os
+# arg: pass "1" to invert matches to return os list that this *isn't*
+function get_os() {
+    set +e
+    for os in osx debian; do
+        "is_$os"; [[ $? == "${1:-0}" ]] && echo "$os"
+    done
+    set -e
+}
+
+
+
+# Display a fancy multi-select menu.
+# Inspired by http://serverfault.com/a/298312
+# $1: query
+# $2 timeout
+# required to set
+# * menu_options array of options
+# * menu_selects array of options that are selected
+function prompt_menu() {
+    local exitcode prompt choices i n timeout prompt
+    query=$1
+    timeout=$2
+    exitcode=0
+    if [[ "$timeout" ]]; then
+        _prompt_menu_draws "$query"
+        read -r -t "$timeout" -n 1 -sp "Press ENTER or wait $timeout seconds to continue, or press any other key to edit."
+        exitcode=$?
+        echo ""
+    fi 1>&2
+    if [[ "$exitcode" == 0 && "$REPLY" ]]; then
+        prompt="Toggle options (Separate options with spaces, ENTER when done): "
+        while _prompt_menu_draws "$query" 1 && read -rp "$prompt" -a choices && [[ "${#choices[@]}" != 0 ]]; do
+            _prompt_menu_adds "${choices[@]}"
+        done
+    fi 1>&2
+    _prompt_menu_adds
+}
+
+# call a function for each choice
+# $1: function, will be called with
+# * chosen 0/1
+# * choice number
+# * rest of the arguments to _prompt_menu_iter
+function _prompt_menu_iter() {
+    local i sel state
+    local fn=$1; shift
+    for i in "${!menu_options[@]}"; do
+        state=0
+        for sel in "${menu_selects[@]}"; do
+            [[ "$sel" == "${menu_options[i]}" ]] && state=1 && break
+        done
+        $fn $state "$i" "$@"
+    done
+}
+
+# $1: prompt
+# $2: if in interactive?
+function _prompt_menu_draws() {
+    e_header "$1"
+    _prompt_menu_iter _prompt_menu_draw "$2"
+}
+
+function _prompt_menu_draw() {
+    local modes=(error success)
+    if [[ "$3" ]]; then
+        "e_${modes[$1]}" "$(printf "%2d) %s\n" $(($2+1)) "${menu_options[$2]}")"
+    else
+        "e_${modes[$1]}" "${menu_options[$2]}"
+    fi
+}
+
+
+# toggle choices
+# pass in toggle choice
+function _prompt_menu_adds() {
+    _prompt_menu_result=()
+    _prompt_menu_iter _prompt_menu_add "$@"
+    menu_selects=("${_prompt_menu_result[@]}")
+}
+
+# decide if choice is still selected after toggle choices made
+# * chosen 0/1
+# * choice number
+# * choices made
+function _prompt_menu_add() {
+    local state i n keep match
+    state=$1; shift
+    i=$1; shift
+    for n in "$@"; do
+        if [[ $n =~ ^[0-9]+$ ]] && (( n-1 == i )); then
+            match=1; [[ "$state" == 0 ]] && keep=1
+        fi
+    done
+    [[ ! "$match" && "$state" == 1 || "$keep" ]] || return
+    _prompt_menu_result=("${_prompt_menu_result[@]}" "${menu_options[i]}")
+}
+
+
+###########################################
+#           ACTION FUNCTIONS
+###########################################
+
+init_file=$DOTFILES/caches/init/selected
+function init_files() {
+    local i f dirname oses os opt remove
+    dirname="$(dirname "$1")"
+    f=("$@")
+    menu_options=(); menu_selects=()
+    for i in "${!f[@]}"; do menu_options[i]="$(basename "${f[i]}")"; done
+
+    if [[ -e "$init_file" ]]; then
+        # Read cache file if possible
+        IFS=$'\n' read -d '' -r -a menu_selects < "$init_file"
+    else
+        # Otherwise default to all scripts not specifically for other OSes
+        mapfile -t oses < <(get_os 1)
+
+        for opt in "${menu_options[@]}"; do
+            remove=
+            for os in "${oses[@]}"; do
+                [[ "$opt" =~ (^|[^a-z])$os($|[^a-z]) ]] && remove=1 && break
+            done
+            [[ "$remove" ]] || menu_selects=("${menu_selects[@]}" "$opt")
+        done
+    fi
+
+    set +u
+    prompt_menu "Run the following init scripts?" $prompt_delay
+    set -u
+    # Write out cache file for future reading.
+    rm "$init_file" 2>/dev/null
+    for i in "${!menu_selects[@]}"; do
+        echo "${menu_selects[i]}" >> "$init_file"
+        echo "$dirname/${menu_selects[i]}"
+    done
 }
 
 function init_do() {
@@ -223,6 +370,9 @@ fi
 # Tweak file globbing.
 shopt -s dotglob
 shopt -s nullglob
+
+# Create caches dir and init subdir, if they don't already exist.
+mkdir -p "$DOTFILES/caches/init"
 
 # If backups are needed, this is where they'll go.
 backup_dir="$DOTFILES/backups/$(date "+%Y-%m-%d_%H:%M:%S")/"
