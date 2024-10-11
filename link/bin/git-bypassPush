@@ -1,0 +1,72 @@
+#!/bin/bash
+set -euo pipefail
+
+# shellcheck disable=SC2120
+help () {
+    # if arguments, print them
+    [ $# == 0 ] || echo "$*"
+
+  cat <<EOF
+Usage: $0
+bypass branch restrictions when pushing
+  -h, --help       display this help and exit
+  -f, --force      push with --force-with-lease
+EOF
+
+    # if args, exit 1 else exit 0
+    [ $# == 0 ] || exit 1
+    exit 0
+}
+
+msg() {
+    echo >&2 -e "${1-}"
+}
+
+die() {
+    local msg=$1
+    local code=${2-1} # default exit status 1
+    msg "$msg"
+    exit "$code"
+}
+
+# getopt short options go together, long options have commas
+TEMP=$(getopt -o hf --long help,force -n "$0" -- "$@")
+#shellcheck disable=SC2181
+if [ $? != 0 ] ; then
+    die "something wrong with getopt"
+fi
+eval set -- "$TEMP"
+
+force=false
+while true ; do
+    case "$1" in
+        -h|--help) help; ;;
+        -f|--force) force=true ; shift ;;
+        --) shift ; break ;;
+        *) die "issue parsing args, unexpected argument '$0'!" ;;
+    esac
+done
+
+
+if ! url=$(git config --get "remote.$(git remote | head -n1).url"); then
+    die "no remote?"
+fi
+
+# parse remote URL (git@ or https://) to "$owner/$repo"
+repo=$(echo "$url" | perl -pe 's#^(?:https|git)(?:://|@)(?:[^:/]*)(?:[:/])##; s/\.git$//')
+
+branch=$(git rev-parse --abbrev-ref HEAD)
+
+ruleset=$(gh api "/repos/$repo/rules/branches/$branch" -q '.[] | select(.type == "pull_request") | .ruleset_id')
+if [ -z "$ruleset" ]; then
+    die "no branch protection?"
+fi
+chronic gh api --verbose --method PUT "/repos/$repo/rulesets/$ruleset" -f "enforcement=disabled"
+if [ "$force" = true ]; then
+    args=(--force-with-lease)
+else
+    args=()
+fi
+git push "${args[@]}"
+
+chronic gh api --verbose --method PUT "/repos/$repo/rulesets/$ruleset" -f "enforcement=active"
