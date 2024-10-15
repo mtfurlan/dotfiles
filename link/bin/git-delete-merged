@@ -7,8 +7,8 @@ help () {
     [ $# == 0 ] || echo "$*"
 
   cat <<EOF
-Usage: $(basename "${BASH_SOURCE[0]}")
-    Delete merged branches
+Usage: $(basename "${BASH_SOURCE[0]}") [BRANCH...]
+    Delete merged branches, optionally limiting to branches passed in
 Available options:
   -h, --help       display this help and exit
   -n, --dry-run    list branches, don't delete
@@ -32,32 +32,42 @@ dryRun=false
 while true ; do
     case "$1" in
         -n|--dry-run) dryRun=true ; shift ;;
-        -h|--help) help ; exit 0 ; shift ;;
+        -h|--help) help ;;
         --) shift ; break ;;
         *) die "issue parsing args, unexpected argument '$0'!" ;;
     esac
 done
 
-branch=$(git rev-parse --abbrev-ref HEAD)
+# newline delimited string
+branchFilters=$( IFS=$'\n'; echo "$*")
+
 git fetch --prune
-# if current branch has a remote, run git pull
-if git ls-remote origin "$branch" | grep "$branch" >/dev/null ; then
-    git pull >/dev/null
+
+upstreamGone=$(git for-each-ref --format '%(refname) %(upstream:track) %(upstream)' refs/heads \
+    | awk '$2 == "[gone]" {sub("refs/heads/", "", $1); print $1}')
+
+if [ -n "$branchFilters" ]; then
+    # if we have branch filters, get lines in both
+    branchesToDelete=$(comm -12 <(echo "$branchFilters" | sort) <(echo "$upstreamGone" | sort))
+else
+    branchesToDelete=$upstreamGone
 fi
 
-branchData=$(git for-each-ref --format '%(refname) %(upstream:track) %(upstream)' refs/heads)
-
-upstreamGone=$(echo "$branchData" | awk '$2 == "[gone]" {sub("refs/heads/", "", $1); print $1}')
-if [[ "$upstreamGone" == "*$branch*" ]]; then
-echo "on a deleted upstream branch, checking out develop"
-git checkout develop
+branch=$(git rev-parse --abbrev-ref HEAD)
+if [[ "$branchesToDelete" == "*$branch*" ]]; then
+    echo "on a deleted upstream branch, checking out develop"
+    if [ "$dryRun" == false ]; then
+        git checkout develop
+    fi
 fi
 
-if [ -n "${upstreamGone}" ]; then
-  echo "branches with deleted upstream:"
-  # shellcheck disable=SC2001
-  echo "$upstreamGone" | sed 's/^/    /'
-    if [ ! "$dryRun" = true ]; then
-      echo "$upstreamGone" | xargs git branch -D
+if [ -n "${branchesToDelete}" ]; then
+    if [ -n "$branchFilters" ]; then
+        echo -n "filtered "
+    fi
+    echo "branches with deleted upstream:"
+    echo "$branchesToDelete" | sed 's/^/    /'
+    if [ "$dryRun" == false ]; then
+        echo "$branchesToDelete" | xargs git branch -D
     fi
 fi
