@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+sudo tee /etc/cron.d/pkg-security-updates-checker >/dev/null <<'EOF'
+#!/usr/bin/env -S bash -c 'sed -n \'s/^# script: \?\(.*\)$/\1/p\' /etc/cron.d/pkg-security-updates-checker  | bash -'
+
+# shebang line throws lines in this file starting with '# script:' at bash
+# crontab executes this file
+
+# run every week on monday
+0 0 * * 1 root chronic /etc/cron.d/pkg-security-updates-checker
+
+# script: set -euo pipefail
+# script:
+# script: chronic apt-get update
+# script: packages=$(apt-get --just-print upgrade | grep -i security| awk '{print $2}' | awk '!seen[$0]++') || true
+# script:
+# script: if [ -z "$packages" ]; then
+# script:     exit 0
+# script: fi
+# script:
+# script: echo "these are packages to update on $(hostname) at $(date --rfc-3339=s)"
+# script: echo
+# script: echo "$packages"
+# script: exit 1
+EOF
+
+sudo chmod +x /etc/cron.d/pkg-security-updates-checker
+echo "installed /etc/cron.d/pkg-security-updates-checker"
