@@ -7,12 +7,12 @@ help () {
     [ $# == 0 ] || echo "$*"
 
   cat <<EOF
-Usage: $(basename "${BASH_SOURCE[0]}") [OPTION]... <target branch>
-    Squash current branch and rebase onto target branch(develop)
+Usage: $(basename "${BASH_SOURCE[0]}") [OPTION]... [target branch]
+    Squash current branch and rebase onto target branch(default origin/HEAD)
     Example steps if target branch is develop:
       git merge develop
       git push
-      gsquash develop // and edit commit subject/body to be descriptive
+      git squash develop // and edit commit subject/body to be descriptive
       // This is to ensure that no files changed, only history
       git diff whatever-branch origin/whatever-branch
       git push --force-with-lease
@@ -52,12 +52,8 @@ while true ; do
     esac
 done
 
-targetBranch=${1:-}
+targetBranch=${1:-origin/HEAD}
 curBranch=$(git rev-parse --abbrev-ref HEAD)
-
-if [ -z "$targetBranch" ]; then
-    help "need to pass in target branch"
-fi
 
 msg "squash/rebase $curBranch onto $targetBranch"
 
