@@ -12,11 +12,34 @@ Usage: $0 [FILE [LINE NUMBER]]
        $0
 Link to the online git file or repo, with optional line number
   -h, --help       display this help and exit
+  -v, --verbose    increase verbosity, may be used more than once
 EOF
 
     # if args, exit 1 else exit 0
     [ $# == 0 ] || exit 1
     exit 0
+}
+
+log() {
+    level=$1
+    shift
+    if [[ "$verbosity" -ge "$level" ]]; then
+        msg "$*"
+    fi
+}
+
+# get the default branch for remote
+# shellcheck disable=SC2120
+gitRemoteDefaultBranch() {
+    # pass in remote or default to first
+    remote=${1:-$(git remote | head -n1)}
+    # TODO: I think this could be cleaner, but remote HEAD seems a bit github
+    # flavoured, and we only care about what git ls-remote shows anyway
+    git ls-remote "$remote" \
+        | grep "$(git ls-remote "$remote" | grep HEAD | cut -f1)" \
+        | cut -f2 \
+        | grep -v HEAD \
+        | sed 's/^refs\/heads\///'
 }
 
 msg() {
@@ -31,59 +54,90 @@ die() {
 }
 
 # getopt short options go together, long options have commas
-TEMP=$(getopt -o h --long help -n "$0" -- "$@")
+TEMP=$(getopt -o hv --long help,verbose -n "$0" -- "$@")
 #shellcheck disable=SC2181
 if [ $? != 0 ] ; then
     die "something wrong with getopt"
 fi
 eval set -- "$TEMP"
 
+verbosity=0
 while true ; do
     case "$1" in
         -h|--help) help; ;;
+        -v|--verbose) verbosity=$((verbosity+1)) ; shift ;;
         --) shift ; break ;;
         *) die "issue parsing args, unexpected argument '$0'!" ;;
     esac
 done
 
 relFile=${1:-}
+line=${2:-}
+log 1 "file: '$relFile', line: $line"
+
 if [ -n "$relFile" ]; then
     # if we have file, cd to it so git commands work
-    cd "$(dirname "$relFile")"
-    relFile=$(basename "$relFile")
+    if [[ -d "$relFile" ]]; then
+        cd "$relFile"
+        relFile="."
+    elif [[ -a "$relFile" ]]; then
+        cd "$(dirname "$relFile")"
+        relFile=$(basename "$relFile")
+    else
+        die "no such file/dir '$relFile'?"
+    fi
+fi
+log 2 "pwd: $(pwd)"
+
+curBranch=$(git rev-parse --abbrev-ref HEAD)
+log 2 "curBranch $curBranch"
+
+# find upstream and upstream branch
+upstreamBranch=$(git for-each-ref --format='%(upstream:short)' "$(git symbolic-ref -q HEAD)")
+if [[ -z "$upstreamBranch" ]]; then
+    die "your branch '$curBranch' has no upstream tracking branch"
 fi
 
-line=${2:-}
+remote=$(echo "$upstreamBranch" | sed 's/\/.*//')
+
+log 2 "upstream: $upstreamBranch"
+log 2 "remote: $remote"
+
+defaultBranch=$(gitRemoteDefaultBranch)
+log 2 "remote default branch: $defaultBranch"
+if [[ "$curBranch" != "$defaultBranch" ]]; then
+    log 3 "not on default branch"
+fi
 
 # get git remote URL
-# just picks the first
-if ! url=$(git config --get "remote.$(git remote | head -n1).url"); then
+if ! url=$(git config --get "remote.$remote.url"); then
     die "no remote?"
 fi
 
 # set provider specific stuff
 lineStr=""
-if [[ $url == *"bitbucket.org"* ]]; then
-    provider="bitbucket.org"
-    urlThing="src"
-    if [ -n "$line" ]; then
-        lineStr="#lines-$line"
-    fi
-elif [[ $url == *"github.com"* ]]; then
+#if [[ $url == *"bitbucket.org"* ]]; then
+#    provider="bitbucket.org"
+#    if [ -n "$line" ]; then
+#        lineStr="#lines-$line"
+#    fi
+#el
+if [[ $url == *"github.com"* ]]; then
     provider="github.com"
-    urlThing="blob"
     if [ -n "$line" ]; then
         lineStr="#L$line"
     fi
 else
-    die "dunno what to do for $url"
+    die "only support github now"
 fi
 
 # parse remote URL (git@ or https://) to "$owner/$repo"
 repo=$(echo "$url" | perl -pe 's#^(?:https|git)(?:://|@)(?:[^:/]*)(?:[:/])##; s/\.git$//')
+log 2 "repo name parsed to $repo"
 
 # if no file, just print repo url
 if [ -z "$relFile" ]; then
+    log 3 "none file, have a blank url"
     echo "https://$provider/$repo"
     exit 0
 fi
@@ -97,15 +151,24 @@ head=${head:-$(git rev-parse HEAD)}
 # get file relative to git root
 fullFile=$(realpath "$relFile") # get full path of relative filepath
 gitRoot=$(git rev-parse --show-toplevel)
-file=${fullFile#"$gitRoot/"} # remove prefix of $gitRoot/
+log 3 "full filepath: $fullFile"
+log 3 "git root: $gitRoot"
+file=${fullFile#"$gitRoot"} # remove prefix of $gitRoot, will do /README.md
+file=$(echo "$file" | sed "s/^\///") # remove ^/
+log 2 "file relative to repo root: $file"
+
+if [ -z "$file" ]; then
+    log 3 "none file but on branch so link that"
+    echo "https://$provider/$repo/tree/$head"
+    exit 0
+fi
 
 #echo "provider: $provider"
 #echo "repo: $repo"
-#echo "urlThing: $urlThing"
 #echo "head: $head"
 #echo "file: $file"
 
 # print the URL
-url="https://$provider/$repo/$urlThing/$head/$file$lineStr"
+url="https://$provider/$repo/blob/$head/$file$lineStr"
 echo "$url"
 exit 0
