@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+remotesFile=/etc/nullmailer/remotes
+if [[ -f "$remotesFile" ]] && sudo grep -q "auth-login" "$remotesFile" ; then
+    echo "already setup"
+    exit 0
+fi
+
+keepassoutput=$(keepassxc-cli show -s ~/sync/passwd/KeePass.kdbx "email/infrastructure.reporting@gmail.com app password")
+email=$(echo "$keepassoutput" | sed -n 's/^UserName: //p')
+pass=$(echo "$keepassoutput" | sed -n 's/^Password: //p')
+
+sudo tee /etc/systemd/system/nullmailer-mount.service >/dev/null <<EOF
+[Unit]
+Description=populate /var/spool/nullmailer/
+Before=nullmailer.service
+
+[Service]
+Type=oneshot
+ExecStart=systemd-tmpfiles --create nullmailer.conf
+ExecStart=mkdir -p /var/spool/nullmailer/tmp
+ExecStart=mkdir -p /var/spool/nullmailer/queue
+ExecStart=chown -R mail:root /var/spool/nullmailer/
+ExecStart=chmod 755 /var/spool/nullmailer/
+ExecStart=chmod 750 /var/spool/nullmailer/queue/
+ExecStart=chmod 750 /var/spool/nullmailer/tmp/
+
+[Install]
+WantedBy=nullmailer.service
+EOF
+
+if ! grep nullmailer /etc/fstab>/dev/null ; then
+    sudo tee -a /etc/fstab >/dev/null <<FSTAB
+
+  tmpfs /var/spool/nullmailer tmpfs nodev,nosuid,noexec,nodiratime,size=5M   0 0
+FSTAB
+fi
+
+sudo mkdir /var/spool/nullmailer
+sudo mount -a
+
+
+sudo apt-get install nullmailer mailutils -y
+sudo systemctl enable nullmailer-mount.service
+
+sudo tee "$remotesFile" >/dev/null <<EOF
+74.125.206.108 smtp --port=465 --auth-login --ssl --user=$email --pass=$pass --insecure
+EOF
+
+sudo systemctl restart nullmailer
+
+echo "testing on $HOSTNAME on $(date --iso=seconds)" | NULLMAILER_NAME="Nullmailer Setup Script on $HOSTNAME" mail -s "test email" "mara@fur.land"
