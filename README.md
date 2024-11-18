@@ -7,6 +7,8 @@ It is currently a heavily modified version of
 
 TODO:
 * https://github.com/steven-omaha/pacdef
+* osx getopt fails
+* osx tmux default-terminal tmux-256color -> xterm-256color
 
 ## Random tools
 * tig: interactive git history viewer

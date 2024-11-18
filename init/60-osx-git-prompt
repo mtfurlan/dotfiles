@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+mkdir -p ~/.local
+curl -o ~/.local/git-prompt.sh \
+    https://raw.githubusercontent.com/git/git/master/contrib/completion/git-prompt.sh
+
+
+cat <<EOF >> ~/.localrc
+source ~/.local/git-prompt.sh
+EOF
