@@ -24,7 +24,6 @@ alias df='df -h'
 alias glog="git log --graph --all --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative"
 alias gpush="git push --force-with-lease"
 
-alias ix="curl -F 'f:1=<-' ix.io"
 alias qr='curl -F-=\<- qrenco.de'
 alias weather='curl "wttr.in?m&format=4"'
 alias weatherGraph='curl v2.wttr.in?m'

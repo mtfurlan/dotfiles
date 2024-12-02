@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# curl examples: https://dpaste.com/FZNXRMS75
+# syntax choices: https://dpaste.com/syntaxes/
+
+# shellcheck disable=SC2120
+h () {
+    # if arguments, print them
+    [ $# == 0 ] || echo "$*"
+
+  cat <<EOF
+Usage: $(basename "${BASH_SOURCE[0]}") [OPTION]... [FILE]
+    send text to dpaste.com
+    FILE: optional file to upload, will do stdin if none given (or -)
+Available options:
+  -s, --syntax <syntax>  file syntax, see https://dpaste.com/syntaxes/
+  -e, --expiry <days>    1 - 365
+  -h, --help             display this help and exit
+EOF
+
+    # if args, exit 1 else exit 0
+    [ $# == 0 ] || exit 1
+    exit 0
+}
+msg() {
+    echo >&2 -e "${*-}"
+}
+
+die() {
+    local msg=$1
+    local code=${2-1} # default exit status 1
+    msg "$msg"
+    exit "$code"
+}
+
+# getopt short options go together, long options have commas
+TEMP=$(getopt -o he:s: --long help,expiry:,syntax: -n "$0" -- "$@")
+#shellcheck disable=SC2181
+if [ $? != 0 ] ; then
+    die "something wrong with getopt"
+fi
+eval set -- "$TEMP"
+
+expiry=-1
+syntax=""
+while true ; do
+    case "$1" in
+        -h|--help) h ;;
+        -e|--expiry) expiry=$2 ; shift 2 ;;
+        -s|--syntax) syntax=$2 ; shift 2 ;;
+        --) shift ; break ;;
+        *) die "issue parsing args, unexpected argument '$1'!" ;;
+    esac
+done
+
+files=( "$@" )
+
+if [[ "${#files[@]}" -gt "1" ]] ; then
+    h "only one file allowed right now, add support for more please"
+fi
+
+if [[ "${#files[@]}" -eq "0" ]] || { [[ "${#files[@]}" -eq "1" ]] && [[ "${files[0]}" == "-" ]]; }; then
+    # stdin
+    files[0]="-"
+else
+    # might not be necessary
+    for i in "${!files[@]}"; do
+        files[i]=$(realpath -s "${files[i]}")
+    done
+fi
+
+args=('-F' "content=<${files[0]}")
+args+=('-s')
+if [[ "$expiry" != "-1" ]]; then
+    args+=('-F' "expiry_days=${expiry}")
+fi
+
+if [[ -n "$syntax" ]]; then
+    args+=('-F' "syntax=${syntax}")
+fi
+
+set -x
+
+args+=("https://dpaste.com/api/v2/")
+curl "${args[@]}"
