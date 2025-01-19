@@ -47,8 +47,11 @@ set -euo pipefail
 # ** override the list of files to work with instead of $repo/$action/*
 # ** takes arg of the original file list
 
-
-export DOTFILES=~/.dotfiles
+if [[ "$0" == "bash" ]]; then
+    export DOTFILES=~/.dotfiles
+else
+    export DOTFILES=$(realpath $(dirname "$0"))
+fi
 
 # Logging stuff.
 function e_header()   { echo -e "\n\033[1m$*\033[0m"; }
@@ -424,6 +427,10 @@ elif [[ $# -eq 0 ]] || [[ "$1" != "restart" ]]; then
             exit
         fi
     fi
+fi
+if [[ ! -e ~/.dotfiles ]]; then
+    # no .dotfiles but it's init, so link
+    ln -s "$DOTFILES" ~/.dotfiles
 fi
 
 # Add binaries into the path
