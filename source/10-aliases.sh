@@ -103,12 +103,15 @@ quoteSubst() {
 }
 
 function unicodePoint {
-    # https://superuser.com/a/1019853/270114
-    echo -n "$1" |              # -n ignore trailing newline                     \
-    iconv -f utf8 -t utf32be |  # UTF-32 big-endian happens to be the code point \
-    xxd -p |                    # -p just give me the plain hex                  \
-    sed -r 's/^0+/0x/' |        # remove leading 0's, replace with 0x            \
-    xargs printf 'U+%04X\n'     # pretty print the code point
+    # print
+    # convert to utf-32 which is the code point
+    # print as raw hex
+    # each code point to new line
+    # print
+    echo -n "$*" | iconv -f utf8 -t utf32be  | xxd -p | fold -w8 \
+        | perl -C -ne 'chomp; s/^(:?00)+//g; print "U+$_: " . (chr hex "0x$_") . "\n"'
+    #TODO: doesn't work for all text?
+    #maybe utf32 isn't correct?
 }
 
 function battlebots {
