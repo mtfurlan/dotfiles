@@ -1,6 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 #TODO: support linking to dirs
+#TODO: support -u or some way to speicy origin
 
 # shellcheck disable=SC2120
 help () {
