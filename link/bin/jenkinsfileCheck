@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# set JENKINS_AUTH and JENKINS_URL somehow
+# shellcheck disable=SC2120
+h () {
+    # if arguments, print them
+    [ $# == 0 ] || echo "$*"
+
+  cat <<EOF
+Usage: $(basename "${BASH_SOURCE[0]}") [OPTION]... [Jenkinsfile]
+    will assume Jenkinsfile is at \$git_root/tooling/Jenkinsfile unless passed
+Available options:
+  -h, --help       display this help and exit
+EOF
+
+    # if args, exit 1 else exit 0
+    [ $# == 0 ] || exit 1
+    exit 0
+}
+
+if [[ "${1-}" == "--help" ]] || [[ "${1-}" == "-h" ]]; then
+    h
+fi
+
+if [[ -z "${JENKINS_AUTH-}" ]] || [[ -z "${JENKINS_URL-}" ]]; then
+    h "need to set JENKINS_AUTH to user:token and JENKINS_URL to http://jenkins.whatever.tld"
+fi
+
+jenkinsfile=${1:-}
+if [[ -z "$jenkinsfile" ]]; then
+    jenkinsfile="$(git rev-parse --show-toplevel )/tooling/Jenkinsfile"
+else
+    if ! [[ -f "$jenkinsfile" ]]; then
+        h "'$jenkinsfile' isn't a real file?"
+    fi
+fi
+
+curl -X POST --user "$JENKINS_AUTH" -F "jenkinsfile=<$jenkinsfile" "$JENKINS_URL/pipeline-model-converter/validate"
