@@ -61,12 +61,20 @@ ruleset=$(gh api "/repos/$repo/rules/branches/$branch" -q '.[] | select(.type ==
 if [ -z "$ruleset" ]; then
     die "no branch protection?"
 fi
+
+# disable rule
 chronic gh api --verbose --method PUT "/repos/$repo/rulesets/$ruleset" -f "enforcement=disabled"
+
+# always restore even on failure
+function restoreRule(){
+    chronic gh api --verbose --method PUT "/repos/$repo/rulesets/$ruleset" -f "enforcement=active"
+}
+trap restoreRule EXIT
+
+
 if [ "$force" = true ]; then
     args=(--force-with-lease)
 else
     args=()
 fi
 git push "${args[@]}"
-
-chronic gh api --verbose --method PUT "/repos/$repo/rulesets/$ruleset" -f "enforcement=active"
