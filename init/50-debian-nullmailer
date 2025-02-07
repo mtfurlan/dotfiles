@@ -48,6 +48,8 @@ sudo tee "$remotesFile" >/dev/null <<EOF
 74.125.206.108 smtp --port=465 --auth-login --ssl --user=$email --pass=$pass --insecure
 EOF
 
+echo "mara@fur.land" | sudo tee /etc/nullmailer/adminaddr
+
 sudo systemctl restart nullmailer
 
 echo "testing on $HOSTNAME on $(date --iso=seconds)" | NULLMAILER_NAME="Nullmailer Setup Script on $HOSTNAME" mail -s "test email" "mara@fur.land"
