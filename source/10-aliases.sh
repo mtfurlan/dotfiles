@@ -127,7 +127,7 @@ function battlebots {
 function replace {
     search=${1:-}
     replace=${2:-}
-    ag -l0 "$search" | xargs -0 -l -- sed -i "s/$search/$replace/g"
+    ag -l0 "$search" | xargs -0 -l -- sed -E -i "s/$search/$replace/g"
 }
 
 function replaceSimple {
