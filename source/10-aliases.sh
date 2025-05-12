@@ -21,7 +21,8 @@ alias pj='ps j'
 
 alias df='df -h'
 
-alias glog="git log --graph --all --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative"
+alias glog="git glog"
+alias glogm="git glog --first-parent"
 alias gpush="git push --force-with-lease"
 
 alias qr='curl -F-=\<- qrenco.de'

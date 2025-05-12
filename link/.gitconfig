@@ -51,7 +51,7 @@
 	upQuiet = !git pull --rebase --prune --autostash --recurse-submodules
 
 	llog = !git log --pretty=format:'%Cgreen(%ci)%Creset %Cred%h%Creset %<(20,trunc)%C(bold blue)%an%Creset  %s %C(yellow)%d%Creset ' --abbrev-commit
-	glog = !git log --graph --all --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative
+	glog = !git log "$@" --graph --all --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative
 
 	# all commits that aren't merges on all branches
 	all = !git log --pretty=oneline --abbrev-commit --all --no-merges
