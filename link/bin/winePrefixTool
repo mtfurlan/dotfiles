@@ -1,0 +1,258 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+prefixDir=~/wine
+
+# shellcheck disable=SC2120
+h () {
+    # if arguments, print them
+    [ $# == 0 ] || echo "$*"
+
+  cat <<EOF
+Usage: $(basename "${BASH_SOURCE[0]}") [OPTION]... <PREFIX_NAME>
+  create a wine prefix in $prefixDir/\$PREFIX_NAME
+Available options:
+  -h, --help            display this help and exit
+  -r, --run=exe         exe to run in prefix
+  -s, --[no-]shortcut   try to create a shotrcut to something in the prefix
+                        defaults to yes if running an exe
+EOF
+
+    # if args, exit 1 else exit 0
+    [ $# == 0 ] || exit 1
+    exit 0
+}
+msg() {
+    echo >&2 -e "${*-}"
+}
+
+die() {
+    local msg=$1
+    local code=${2-1} # default exit status 1
+    msg "$msg"
+    exit "$code"
+}
+
+# getopt short options go together, long options have commas
+TEMP=$(getopt -o hr:s --long help,run:,shortcut,no-shortcut,delete-all-wine-shotcuts -n "$0" -- "$@")
+#shellcheck disable=SC2181
+if [ $? != 0 ] ; then
+    die "something wrong with getopt"
+fi
+eval set -- "$TEMP"
+
+exe=""
+shortcut=false
+deleteAll=false
+while true; do
+    case "$1" in
+        -h|--help) h ;;
+        -r|--run) exe=$2; shortcut=true; shift 2 ;;
+        -s|--shortcut) shortcut=true; shift ;;
+        --no-shortcut) shortcut=false; shift ;;
+        --delete-all-wine-shotcuts) deleteAll=true ; shift ;;
+        --) shift; break ;;
+        *) die "issue parsing args, unexpected argument '$1'!" ;;
+    esac
+done
+
+
+function multiselect {
+    # https://unix.stackexchange.com/a/673436
+    # little helpers for terminal print control and key input
+    cursor_blink_on()   { printf "\033[?25h"; }
+    cursor_blink_off()  { printf "\033[?25l"; }
+    cursor_to()         { printf "\033[%s;%sH" "$1" "${2:-1}"; }
+
+    checkbox() {
+        if [[ -n "${1:-}" ]]; then
+            printf "[\e[38;5;46m✔\e[0m]"
+        else
+            printf "[ ]"
+        fi
+    }
+    print_inactive()    { printf "%s  %s" "$(checkbox "$2")" "$1"; }
+    print_active()      { printf "%s  \033[7m%s\033[27m" "$(checkbox "$2")" "$1"; }
+    # shellcheck disable=SC2034
+    get_cursor_row()    { IFS=';' read -rsdR -p $'\E[6n' ROW COL; echo "${ROW#*[}"; }
+
+    local return_value=$1
+    local -n options=$2
+    local -n defaults=$3
+
+    local selected=()
+    for ((i=0; i<${#options[@]}; i++)); do
+        if [[ -n "${defaults[i]:-}" ]] && [[ "${defaults[i]}" = "true" ]]; then
+            selected+=("true")
+        else
+            selected+=("false")
+        fi
+        printf "\n"
+    done
+
+    # determine current screen position for overwriting the options
+    local lastrow
+    local startrow
+    lastrow=$(get_cursor_row)
+    startrow=$((lastrow - ${#options[@]}))
+
+    # ensure cursor and input echoing back on upon a ctrl+c during read -s
+    trap "cursor_blink_on; stty echo; printf '\n'; exit" 2
+    cursor_blink_off
+
+    key_input() {
+        local key
+        IFS= read -rsn1 key 2>/dev/null >&2
+        if   [[ $key = ""      ]]; then echo "enter"
+        elif [[ $key = $'\x20' ]]; then echo "space"
+        elif [[ $key = "k"     ]]; then echo "up"
+        elif [[ $key = "j"     ]]; then echo "down"
+        elif [[ $key = $'\x1b' ]]; then
+            read -rsn2 key
+            if [[ $key = [A || $key = k ]]; then echo "up"
+            elif [[ $key = [B || $key = j ]]; then echo "down"
+            fi
+        fi
+    }
+
+    toggle_option() {
+        local option=$1
+        if [[ ${selected[option]} == true ]]; then
+            selected[option]=false
+        else
+            selected[option]=true
+        fi
+    }
+
+    print_options() {
+        # print options by overwriting the last lines
+        local idx=0
+        for option in "${options[@]}"; do
+            local checked=
+            if [[ ${selected[idx]} == true ]]; then
+                checked=1
+            fi
+
+            cursor_to $((startrow + idx))
+            if [ "$idx" -eq "$1" ]; then
+                print_active "$option" "$checked"
+            else
+                print_inactive "$option" "$checked"
+            fi
+            ((idx++)) || true
+        done
+    }
+
+    local active=0
+    while true; do
+        print_options $active
+
+        # user key control
+        case $(key_input) in
+            space)  toggle_option $active;;
+            enter)  print_options -1; break;;
+            up)     ((active--)) || true;
+                    if [ $active -lt 0 ]; then active=$((${#options[@]} - 1)); fi;;
+            down)   ((active++)) || true;
+                    if [ $active -ge ${#options[@]} ]; then active=0; fi;;
+        esac
+    done
+
+    # cursor position back to normal
+    cursor_to "$lastrow"
+    printf "\n"
+    cursor_blink_on
+
+    # todo evaluate eval
+    # shellcheck disable=SC2086
+    eval $return_value='("${selected[@]}")'
+}
+
+handleDeleteAll() {
+    read -r -p "really delete all wine application shortcuts [y/N] " response
+    case "$response" in
+        [yY][eE][sS]|[yY]|'')
+            set -x
+            rm -rf ~/.local/share/applications/wine
+            rm -rf ~/.config/menus/applications-merged/wine-*
+            rm -rf ~/.local/share/icons/hicolor/**/*wine*
+            rm -rf ~/.local/share/desktop-directories/wine-*
+            ;;
+        *)
+            echo "not deleting"
+            ;;
+    esac
+}
+
+handleNormal() {
+    prefix=${1:-}
+    if [ -z "$prefix" ]; then
+        h "need to pass in prefix name"
+    fi
+    shift
+
+    if [[ -n "$exe" ]] && [[ ! -e "$exe" ]]; then
+        die "'$exe' does not exist"
+    fi
+
+    export WINEPREFIX="$prefixDir/$prefix"
+
+    echo "regedit to not automatically add program shortcuts or file associations"
+    # https://gitlab.winehq.org/wine/wine/-/wikis/FAQ#how-can-i-prevent-wine-from-changing-the-filetype-associations-on-my-system-or-adding-unwanted-menu-entriesdesktop-links
+    # that says to uncheck the "Manage File Associations" in winecfg, which sets the following registry key:
+    wine reg add 'HKEY_CURRENT_USER\Software\Wine\FileOpenAssociations' /v Enable /d N /f
+    # unfortunately, that doesn't actually work?
+    # I thought it was?
+    # Either way, the following actually works, and is the way you do it in older versions?
+    #wine reg add 'HKEY_CURRENT_USER\Software\Wine\DllOverrides' /v winemenubuilder.exe /d "" /f
+    # just going to do both cause fuck it
+    echo "TODO: it stopped working, but the other solution breaks other stuff"
+
+    echo "remove symlinks from wineprefix"
+    winetricks sandbox
+    # I think the following is equivalent, but I'm going to trust winetricks sandbox more
+    #rm -f "$WINEPREFIX/dosdevices/z:"
+    #find "$WINEPREFIX/drive_c" -type l -print0 |
+    #    while IFS= read -r -d '' link; do
+    #        echo "removing $link"
+    #        rm "$link"
+    #        mkdir "$link"
+    #    done
+
+    # some stuff still needs z, but z in homedir doesn't work so bleh whatever
+    ln -s "/tmp/" "$WINEPREFIX/dosdevices/z:"
+
+    if [[ -n "$exe" ]]; then
+        wine "$exe"
+    fi
+    if [ "$shortcut" = true ]; then
+        menu_options=()
+        mapfile -d '' shortcuts < <(find "$WINEPREFIX/drive_c" -iname "*.lnk" -print0)
+
+        for shortcut in "${shortcuts[@]}"; do
+            echo "adding $(realpath --relative-to "$WINEPREFIX/" "$shortcut")"
+            menu_options+=("$(realpath --relative-to "$WINEPREFIX/" "$shortcut")")
+        done
+
+        local result
+        # TODO: preselect should be optional
+        # shellcheck disable=SC2034
+        preselect=()
+        multiselect result menu_options preselect
+
+        for i in "${!menu_options[@]}"; do
+            if [[ "${result[i]}" == "true" ]]; then
+                echo "making shortcut for ${menu_options[i]}"
+                echo wine64 winemenubuilder "$WINEPREFIX/${menu_options[i]}"
+                #echo xdg-desktop-menu install '/home/mara/.local/share/applications/wine/Programs/u-blox/u-center_v25.03/u-center_v25.03.desktop'
+            fi
+        done
+    fi
+}
+
+
+if [ "$deleteAll" = true ]; then
+    handleDeleteAll
+    exit 0
+fi
+handleNormal "$@"
