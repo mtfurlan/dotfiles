@@ -86,9 +86,6 @@ function dsf {
 
 alias gitaddWithoutWhitespace='git diff -U0 -w --no-color | git apply --cached --ignore-whitespace --unidiff-zero -'
 
-function lyricsGrep {
-    find . -type f \( -name "*.flac" -o -name "*.mp3" \) -print0 | xargs -0 exiftool -artist -album -title -lyrics -lyrics-xxx | grep -E -i -B3 "$@"
-}
 
 # https://stackoverflow.com/a/29613573
 # SYNOPSIS
