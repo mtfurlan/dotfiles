@@ -101,15 +101,8 @@ quoteSubst() {
 }
 
 function unicodePoint {
-    # print
-    # convert to utf-32 which is the code point
-    # print as raw hex
-    # each code point to new line
-    # print
-    echo -n "$*" | iconv -f utf8 -t utf32be  | xxd -p | fold -w8 \
-        | perl -C -ne 'chomp; s/^(:?00)+//g; print "U+$_: " . (chr hex "0x$_") . "\n"'
-    #TODO: doesn't work for all text?
-    #maybe utf32 isn't correct?
+    echo "using uniname, please start using that directly"
+    echo -n "$*" | uniname
 }
 
 function battlebots {

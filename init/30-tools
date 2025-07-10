@@ -139,8 +139,9 @@ EOF
 
 install_tools() {
   set -x
-  sudo apt-get install python3-dev python-is-python3 python3-pip jq vim-nox silversearcher-ag \
-    tree bash-completion pipx lsd sl xxd
+  sudo apt-get install python3-dev python-is-python3 python3-pip jq vim-nox \
+  silversearcher-ag tree bash-completion pipx lsd sl xxd uniutils
+
   set +x
 
   update_tools
