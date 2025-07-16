@@ -16,6 +16,7 @@ Available options:
   -r, --run=exe         exe to run in prefix
   -s, --[no-]shortcut   try to create a shotrcut to something in the prefix
                         defaults to yes if running an exe
+      --delete-all-wine-shotcuts delete all wine shortcuts, do nothing else
 EOF
 
     # if args, exit 1 else exit 0
@@ -56,6 +57,21 @@ while true; do
     esac
 done
 
+setup_colors() {
+    if [[ -t 2 ]] && [[ -z "${NO_COLOR-}" ]] && [[ "${TERM-}" != "dumb" ]]; then
+        NC="$(tput sgr0)"
+        RED="$(tput setaf 1)"
+        GREEN="$(tput setaf 2)"
+        ORANGE="$(tput setaf 3)"
+        BLUE="$(tput setaf 4)"
+        PURPLE="$(tput setaf 5)"
+        CYAN="$(tput setaf 6)"
+        YELLOW="$(tput setaf 7)"
+    else
+        NC='' RED='' GREEN='' ORANGE='' BLUE='' PURPLE='' CYAN='' YELLOW=''
+    fi
+}
+setup_colors
 
 function multiselect {
     # https://unix.stackexchange.com/a/673436
@@ -172,7 +188,6 @@ handleDeleteAll() {
     read -r -p "really delete all wine application shortcuts [y/N] " response
     case "$response" in
         [yY][eE][sS]|[yY]|'')
-            set -x
             rm -rf ~/.local/share/applications/wine
             rm -rf ~/.config/menus/applications-merged/wine-*
             rm -rf ~/.local/share/icons/hicolor/**/*wine*
@@ -200,16 +215,16 @@ handleNormal() {
     echo "regedit to not automatically add program shortcuts or file associations"
     # https://gitlab.winehq.org/wine/wine/-/wikis/FAQ#how-can-i-prevent-wine-from-changing-the-filetype-associations-on-my-system-or-adding-unwanted-menu-entriesdesktop-links
     # that says to uncheck the "Manage File Associations" in winecfg, which sets the following registry key:
-    wine reg add 'HKEY_CURRENT_USER\Software\Wine\FileOpenAssociations' /v Enable /d N /f
+    #wine reg add 'HKEY_CURRENT_USER\Software\Wine\FileOpenAssociations' /v Enable /d N /f
     # unfortunately, that doesn't actually work?
     # I thought it was?
     # Either way, the following actually works, and is the way you do it in older versions?
     #wine reg add 'HKEY_CURRENT_USER\Software\Wine\DllOverrides' /v winemenubuilder.exe /d "" /f
     # just going to do both cause fuck it
-    echo "TODO: it stopped working, but the other solution breaks other stuff"
+    echo "${RED}TODO: it stopped working, but the other solution breaks other stuff${NC}"
 
     echo "remove symlinks from wineprefix"
-    winetricks sandbox
+    #winetricks sandbox
     # I think the following is equivalent, but I'm going to trust winetricks sandbox more
     #rm -f "$WINEPREFIX/dosdevices/z:"
     #find "$WINEPREFIX/drive_c" -type l -print0 |
@@ -220,7 +235,7 @@ handleNormal() {
     #    done
 
     # some stuff still needs z, but z in homedir doesn't work so bleh whatever
-    ln -s "/tmp/" "$WINEPREFIX/dosdevices/z:"
+    #ln -s "/tmp/" "$WINEPREFIX/dosdevices/z:"
 
     if [[ -n "$exe" ]]; then
         wine "$exe"
@@ -243,7 +258,9 @@ handleNormal() {
         for i in "${!menu_options[@]}"; do
             if [[ "${result[i]}" == "true" ]]; then
                 echo "making shortcut for ${menu_options[i]}"
-                echo wine64 winemenubuilder "$WINEPREFIX/${menu_options[i]}"
+                echo "${RED}doesn't work yet${NC}"
+                # maybe just make a list of all shotcuts before and after and select which new ones to keep from the diff?
+                echo wine winemenubuilder "$WINEPREFIX/${menu_options[i]}"
                 #echo xdg-desktop-menu install '/home/mara/.local/share/applications/wine/Programs/u-blox/u-center_v25.03/u-center_v25.03.desktop'
             fi
         done
