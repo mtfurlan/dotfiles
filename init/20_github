@@ -18,8 +18,10 @@ setup_github() {
             ;;
     esac
     ssh-keygen -t "$GITHUB_KEY_TYPE" -N '' -f  ~/.ssh/"github_$GITHUB_KEY_TYPE"
-    cat ~/.ssh/"github_${GITHUB_KEY_TYPE}.pub"
-    echo "Add that to github"
+    cat "~/.ssh/github_${GITHUB_KEY_TYPE}.pub"
+    echo "Add that to github, either by link or gh"
+    echo "https://github.com/settings/ssh/new"
+    echo "gh ssh-key add <(echo "\"$(cat ~/.ssh/github_ed25519.pub)\"" )"
     read -n 1 -s -r -p "Press any key to continue"
     echo ""
 }
