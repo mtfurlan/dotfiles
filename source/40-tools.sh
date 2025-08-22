@@ -1,9 +1,8 @@
 #!/bin/sh
 
-# https://github.com/nvbn/thefuck
-# defines 'fuck' as a command to fix the last command
-if exists thefuck ; then
-    eval "$(thefuck --alias)"
+# defines 'f' as a command to fix the last command
+if exists pay-respects ; then
+    eval "$(pay-respects bash --alias --nocnf)"
 fi
 
 # make less more friendly for non-text input files, see lesspipe(1)

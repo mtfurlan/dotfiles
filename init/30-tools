@@ -85,8 +85,9 @@ cloneAndPull() {
 }
 
 update_tools() {
-  pipx install thefuck
   pipx install yq # installs xq
+
+  curl -sSfL https://raw.githubusercontent.com/iffse/pay-respects/main/install.sh | sh
 
   # shellcheck disable=SC2016
   installDebGH bat 'sharkdp/bat' '${PKG}_${VER}_${ARCH}.deb'
@@ -147,7 +148,7 @@ install_tools() {
   update_tools
 }
 
-read -r -p "install extra tools(thefuck, yq, fzf, up)? [y/N] " response
+read -r -p "install extra tools(pay-respects, yq, fzf, up)? [y/N] " response
 case "$response" in
   [yY][eE][sS]|[yY])
     install_tools
