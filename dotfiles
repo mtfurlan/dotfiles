@@ -228,7 +228,11 @@ function init_files() {
     local i f dirname oses os opt remove
     dirname="$(dirname "$1")"
     f=("$@")
-    menu_options=(); menu_selects=()
+
+    # menu_options is list of options
+    # menu_selects is list of options that are selected
+    menu_options=()
+    menu_selects=()
     for i in "${!f[@]}"; do menu_options[i]="$(basename "${f[i]}")"; done
 
     if [[ -e "$init_file" ]]; then
@@ -236,15 +240,25 @@ function init_files() {
         IFS=$'\n' read -d '' -r -a menu_selects < "$init_file"
     else
         # Otherwise default to all scripts not specifically for other OSes
+        # also only default scripts named *_opt
         mapfile -t oses < <(get_os 1)
 
         for opt in "${menu_options[@]}"; do
             remove=
+            # set remove if bad os
             for os in "${oses[@]}"; do
                 [[ "$opt" =~ (^|[^a-z])$os($|[^a-z]) ]] && remove=1 && break
             done
+
+            # set remove if ends in _opt
+            if [[ "$opt" =~ (_opt$) ]]; then
+                remove=1
+            fi
+
+            # if remove, don't add to menu_selects
             [[ "$remove" ]] || menu_selects=("${menu_selects[@]}" "$opt")
         done
+
     fi
 
     set +u
