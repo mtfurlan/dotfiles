@@ -1,0 +1,8 @@
+# vi mode
+set editing-mode vi
+
+# tab complete symbolic links to directories as normal directories
+set mark-symlinked-directories on
+
+# don't edit history
+set revert-all-at-newline on
