@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+mnamer \
+    --movie-directory /mnt/media/Video/Movies \
+    --movie-api tmdb \
+    --movie-format "{name} ({year}) [tmbid-{id_tmdb}]/{name} ({year}){extension}" \
+    --episode-directory /mnt/media/Video/TV\ Shows/ \
+    --episode-api tvdb \
+    --episode-format "{series} ({year}) [tvdbid-{id_tvdb}]/Season {season:02}/{series} ({year}) - S{season:02}E{episode:02} - {title}{extension}" \
+    "$@"
