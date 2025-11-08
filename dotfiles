@@ -48,10 +48,11 @@ set -euo pipefail
 # ** takes arg of the original file list
 
 if [[ "$0" == "bash" ]]; then
-    export DOTFILES=~/.dotfiles
+    DOTFILES=~/.dotfiles
 else
-    export DOTFILES=$(realpath $(dirname "$0"))
+    DOTFILES=$(realpath "$(dirname "$0")")
 fi
+export DOTFILES
 
 # Logging stuff.
 function e_header()   { echo -e "\n\033[1m$*\033[0m"; }
@@ -78,10 +79,6 @@ EOF
     exit 0
 }
 
-
-msg() {
-    echo >&2 -e "${1-}"
-}
 die() {
     local msg=$1
     local code=${2-1} # default exit status 1
@@ -424,11 +421,11 @@ if [[ ! -d $DOTFILES ]]; then
     # Dotfiles directory doesn't exist? Clone it!
     e_header "Downloading dotfiles"
     git clone --branch "${DOTFILES_GH_BRANCH:-master}" --recursive "https://github.com/${DOTFILES_GH_USER:-mtfurlan}/dotfiles.git" "$DOTFILES"
-    cd $DOTFILES || die "couldn't cd dotfiles"
+    cd "$DOTFILES" || die "couldn't cd dotfiles"
 elif [[ $# -eq 0 ]] || [[ "$1" != "restart" ]]; then
     # Make sure we have the latest files.
     e_header "Updating dotfiles"
-    cd $DOTFILES || die "couldn't cd dotfiles"
+    cd "$DOTFILES" || die "couldn't cd dotfiles"
     prev_head="$(git rev-parse HEAD)"
     git pull
     git submodule update --init --recursive --quiet
@@ -462,7 +459,7 @@ backup_dir="$DOTFILES/backups/$(date "+%Y-%m-%d_%H:%M:%S")/"
 backup=
 
 # Execute code for each file in these subdirectories.
-msg "running ${actions[*]}"
+echo "running ${actions[*]}"
 for a in "${actions[@]}"; do
     do_stuff "$a"
 done
