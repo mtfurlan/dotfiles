@@ -363,3 +363,16 @@ function! GSourceFun(...)
   echo res
 endfunction
 command! -nargs=? GSource call GSourceFun(<f-args>)
+
+
+function! ProfileStart()
+  profile start profile.log
+  profile func *
+  profile file *
+endfunction
+command ProfileStart call ProfileStart()
+function! ProfileStop()
+  profile pause
+  noautocmd qall!
+endfunction
+command ProfileStop call ProfileStop()
