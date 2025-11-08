@@ -134,3 +134,15 @@ function daysBetween {
     format=${3:-%Y-%m-%d}
     python -c "import datetime; print((datetime.datetime.strptime('$a', '$format') - datetime.datetime.strptime('$b', '$format')).days)"
 }
+
+alias udevReload="sudo udevadm control --reload-rules && sudo udevadm trigger"
+
+function findRecent {
+    if [[ $# -eq 0 ]] ; then
+        echo "findRecent: do find but sort by most recent modification"
+        echo "calls 'find "\$@" ...' so use those args"
+        return 0
+    fi
+
+    find "$@" -printf "%T+ %h%f\n" 2>/dev/null | sort -r
+}
