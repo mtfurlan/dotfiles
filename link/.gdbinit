@@ -1,5 +1,6 @@
 set auto-load safe-path /
 set history save on
+set startup-quietly on
 
 # https://stackoverflow.com/a/54784260/2423187
 define xxd
