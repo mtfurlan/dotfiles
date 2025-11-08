@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "replaced by https://vencord.dev/download/"
+exit 0
+
+url="https://github.com/GooseMod/OpenAsar/releases/download/nightly/app.asar"
+file=/usr/share/discord/resources/app.asar
+fileBak="$file.bak"
+
+if [[ ! -f "$fileBak" ]]; then
+    echo "no bak, making one"
+    sudo cp "$file" "$fileBak"
+else
+    echo "already has a bak, keeping that"
+fi
+
+sudo wget -O "$file" "$url"
+
