@@ -91,7 +91,7 @@ alias gitaddWithoutWhitespace='git diff -U0 -w --no-color | git apply --cached -
 # SYNOPSIS
 #   quoteRe <text>
 # shellcheck disable=SC1003
-quoteRe() { sed -e 's/[^^]/[&]/g; s/\^/\\^/g; $!a\'$'\n''\\n' <<<"$1" | tr -d '\n'; }
+quoteRe() { sed -e 's/[^^\]/[&]/g; s/[\^]/\\&/g; $!a\'$'\n''\\n' <<<"$1" | tr -d '\n'; }
 
 # SYNOPSIS
 #  quoteSubst <text>
