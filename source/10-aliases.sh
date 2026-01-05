@@ -146,3 +146,11 @@ function findRecent {
 
     find "$@" -printf "%T+ %h%f\n" 2>/dev/null | sort -r
 }
+
+
+function urlencode {
+    perl -MURI::Escape -e 'print uri_escape($ARGV[0])' "$@"
+}
+function urldecode {
+    perl -MURI::Escape -e 'print uri_unescape($ARGV[0])' "$@"
+}
