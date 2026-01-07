@@ -5,7 +5,7 @@ set -euo pipefail
 usage() {
   cat <<EOF
 Usage: $(basename "${BASH_SOURCE[0]}") [-h] [target branch]
-Try to delete current branch if it's merged into target("develop" is default) and remote is gone.
+Try to delete current branch if it's merged into target("develop" is default if we can't get from upstream) and remote is gone.
 
 -h, --help      Print this help and exit
 EOF
@@ -17,8 +17,9 @@ if [[ "$*" == *"-h"* ]]; then
 fi
 
 
+defaultBranch=$(git rev-parse --abbrev-ref origin/HEAD)
 branch=$(git rev-parse --abbrev-ref HEAD)
-target="${1-develop}"
+target="${1-${defaultBranch-develop}}"
 git fetch --prune
 if git ls-remote origin "$branch" | grep "$branch" >/dev/null; then
     echo "$branch has remote-tracking, figure it out"
