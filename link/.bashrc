@@ -14,7 +14,7 @@ function src() {
         #shellcheck disable=SC1090
         source "$DOTFILES/source/$1.sh"
     else
-        for file in "$DOTFILES/source"/*; do
+        for file in "$DOTFILES/source"/*.sh; do
             #shellcheck disable=SC1090
             source "$file"
         done
