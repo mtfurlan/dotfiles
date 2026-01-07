@@ -28,21 +28,6 @@ log() {
         msg "$*"
     fi
 }
-
-# get the default branch for remote
-# shellcheck disable=SC2120
-gitRemoteDefaultBranch() {
-    # pass in remote or default to first
-    remote=${1:-$(git remote | head -n1)}
-    # TODO: I think this could be cleaner, but remote HEAD seems a bit github
-    # flavoured, and we only care about what git ls-remote shows anyway
-    git ls-remote "$remote" \
-        | grep "$(git ls-remote "$remote" | grep HEAD | cut -f1)" \
-        | cut -f2 \
-        | grep -v HEAD \
-        | sed 's/^refs\/heads\///'
-}
-
 msg() {
     echo >&2 -e "${1-}"
 }
@@ -72,9 +57,21 @@ while true ; do
     esac
 done
 
+
 relFile=${1:-}
 line=${2:-}
 log 1 "file: '$relFile', line: $line"
+
+# get the default branch for remote
+# shellcheck disable=SC2120 # optional argument
+gitRemoteDefaultBranch() {
+    # pass in remote or default to first
+    remote=${1:-$(git remote | head -n1)}
+
+    # if this fails cause dangling head, do
+    # git remote set-head origin -a
+    git rev-parse --abbrev-ref "$remote/HEAD" | sed "s/origin\///"
+}
 
 if [ -n "$relFile" ]; then
     # if we have file, cd to it so git commands work
@@ -115,31 +112,49 @@ if ! url=$(git config --get "remote.$remote.url"); then
     die "no remote?"
 fi
 
-# set provider specific stuff
-lineStr=""
-#if [[ $url == *"bitbucket.org"* ]]; then
-#    provider="bitbucket.org"
-#    if [ -n "$line" ]; then
-#        lineStr="#lines-$line"
-#    fi
-#el
-if [[ $url == *"github.com"* ]]; then
-    provider="github.com"
-    if [ -n "$line" ]; then
-        lineStr="#L$line"
-    fi
-else
-    die "only support github now"
-fi
 
-# parse remote URL (git@ or https://) to "$owner/$repo"
-repo=$(echo "$url" | perl -pe 's#^(?:https|git)(?:://|@)(?:[^:/]*)(?:[:/])##; s/\.git$//')
-log 2 "repo name parsed to $repo"
+
+fields=$(echo "$url" | perl -ne '($host, $owner, $repo) = /^(?:https?:\/\/|git@)([^:\/]*)(?:[:\/])([^\/]*)\/(.*?)(?:.git)?+$/; print "$host\t$owner\t$repo";')
+providerStr=$(echo "$fields" | cut -d$'\t' -f1)
+owner=$(echo "$fields" | cut -d$'\t' -f2)
+repo=$(echo "$fields" | cut -d$'\t' -f3)
+log 2 "repo remote url  name parsed to $providerStr $owner $repo"
+
+
+# handle stuff like git@github.com-company without parsing the ssh config
+lineStr=""
+case "$providerStr" in
+    *"github.com"*)
+        provider=github.com
+        repoFileSeparator=blob
+        if [ -n "$line" ]; then
+            lineStr="#L$line"
+        fi
+        ;;
+    *"gitlab.com"*)
+        provider=gitlab.com
+        repoFileSeparator=-/blob
+        if [ -n "$line" ]; then
+            lineStr="#L$line"
+        fi
+        ;;
+    #*"bitbucket.org"*)
+    #    provider=bitbucket.org
+    #    if [ -n "$line" ]; then
+    #        lineStr="#lines-$line"
+    #    fi
+    #    ;;
+    *)
+        die "only support github right now"
+        ;;
+esac
+
+repoURL="https://$provider/$owner/$repo"
 
 # if no file, just print repo url
 if [ -z "$relFile" ]; then
     log 3 "none file, have a blank url"
-    echo "https://$provider/$repo"
+    echo "$repoURL"
     exit 0
 fi
 
@@ -160,16 +175,13 @@ log 2 "file relative to repo root: $file"
 
 if [ -z "$file" ]; then
     log 3 "none file but on branch so link that"
-    echo "https://$provider/$repo/tree/$head"
+    echo "$repoURL/tree/$head"
     exit 0
 fi
 
-#echo "provider: $provider"
-#echo "repo: $repo"
-#echo "head: $head"
 #echo "file: $file"
 
 # print the URL
-url="https://$provider/$repo/blob/$head/$file$lineStr"
+url="$repoURL/$repoFileSeparator/$head/$file$lineStr"
 echo "$url"
 exit 0
