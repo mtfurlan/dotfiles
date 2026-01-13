@@ -19,7 +19,7 @@ fi
 
 # if this fails cause dangling head, do
 # git remote set-head origin -a
-defaultBranch=$(git rev-parse --abbrev-ref origin/HEAD)
+defaultBranch=$(git rev-parse --abbrev-ref origin/HEAD | xargs basename )
 
 branch=$(git rev-parse --abbrev-ref HEAD)
 target="${1-${defaultBranch-develop}}"
