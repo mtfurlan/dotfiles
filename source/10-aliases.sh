@@ -154,3 +154,5 @@ function urlencode {
 function urldecode {
     perl -MURI::Escape -e 'print uri_unescape($ARGV[0])' "$@"
 }
+
+alias fuck=f
