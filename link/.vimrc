@@ -353,16 +353,20 @@ augroup myvimrc
     au BufWritePost .vimrc,_vimrc,vimrc,.gvimrc,_gvimrc,gvimrc so $MYVIMRC | if has('gui_running') | so $MYGVIMRC | endif
 augroup END
 
-function! GSourceFun(...)
-  if a:0
-    let res = system('git source ' . expand('%') . ' ' . line('.'))
+function! _GSource(r,l1,l2) abort
+  let filename=resolve(expand('%:p'))
+  let dir = substitute(filename, expand('%:t'), '', '')
+  if a:r == 0
+    let res = system('git -C "' .dir.'" source "' . filename .'"')
+  elseif a:l2 - a:l1 == 0
+    let res = system('git -C "' .dir.'" source "' . filename .'" ' . a:l1)
   else
-    let res = system('git source ' . expand('%'))
+    let res = system('git -C "' .dir.'" source "' . filename .'" ' . a:l1 . ' ' . a:l2)
   endif
   let res = substitute(res, '\n$', '', '')
   echo res
 endfunction
-command! -nargs=? GSource call GSourceFun(<f-args>)
+command! -range GSource call _GSource(<range>,<line1>,<line2>)
 
 
 function! ProfileStart()

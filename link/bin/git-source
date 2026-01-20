@@ -9,9 +9,9 @@ help () {
     [ $# == 0 ] || echo "$*"
 
   cat <<EOF
-Usage: $0 [FILE [LINE NUMBER]]
+Usage: $0 [FILE [LINE NUMBER [LINE NUMBER]]]
        $0
-Link to the online git file or repo, with optional line number
+Link to the online git file or repo, with optional line number(s)
   -h, --help       display this help and exit
   -v, --verbose    increase verbosity, may be used more than once
 EOF
@@ -60,7 +60,8 @@ done
 
 relFile=${1:-}
 line=${2:-}
-log 1 "file: '$relFile', line: $line"
+line2=${3:-}
+log 1 "file: '$relFile', line: $line, line2: $line2"
 
 # get the default branch for remote
 # shellcheck disable=SC2120 # optional argument
@@ -129,6 +130,9 @@ case "$providerStr" in
         repoFileSeparator=blob
         if [ -n "$line" ]; then
             lineStr="#L$line"
+            if [ -n "$line2" ]; then
+                lineStr+="-L$line2"
+            fi
         fi
         ;;
     *"gitlab.com"*)
@@ -136,6 +140,9 @@ case "$providerStr" in
         repoFileSeparator=-/blob
         if [ -n "$line" ]; then
             lineStr="#L$line"
+            if [ -n "$line2" ]; then
+                lineStr+="-$line2"
+            fi
         fi
         ;;
     #*"bitbucket.org"*)
@@ -145,7 +152,7 @@ case "$providerStr" in
     #    fi
     #    ;;
     *)
-        die "only support github right now"
+        die "don't support $providerStr yet"
         ;;
 esac
 
