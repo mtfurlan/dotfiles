@@ -71,7 +71,7 @@ gitRemoteDefaultBranch() {
 
     # if this fails cause dangling head, do
     # git remote set-head origin -a
-    git rev-parse --abbrev-ref "$remote/HEAD" | sed "s/origin\///"
+    git rev-parse --abbrev-ref "$remote/HEAD" | sed "s/$remote\///" || git remote set-head "$remote" -a | sed 's/.*set to //'
 }
 
 if [ -n "$relFile" ]; then
