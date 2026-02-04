@@ -281,7 +281,8 @@ set clipboard=
 " :reg will display all registers
 :nnoremap "p :reg <bar> exec 'normal! "'.input('>').'p'<CR>
 
-" auto-complete thing
+" === tab completion ===
+set wildmode=longest,list,full
 set wildmenu
 
 " default tab settings, should get overridden...
