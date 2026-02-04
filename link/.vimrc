@@ -343,9 +343,25 @@ set fileformats=unix,dos
 "set nobinary
 
 
-" to show all whitespace tabs spaces
-":set listchars=eol:¬,tab:>·,trail:~,extends:>,precedes:<,space:␣
-":set list
+function _ToggleWhitespace()
+  if !exists("b:showWhitespace") || !b:showWhitespace
+    " save old options
+    let b:oldListchars=&listchars
+    let b:oldList=&list
+    " to show all whitespace tabs spaces
+    set listchars=eol:¬,tab:>·,trail:~,extends:>,precedes:<,space:␣
+    set list
+    " set status
+    let b:showWhitespace=1
+  else
+    " restore old options
+    let &listchars=b:oldListchars
+    let &list=b:oldList
+    " set status
+    let b:showWhitespace=0
+  endif
+endfunction
+command -bar ToggleWhitespace call _ToggleWhitespace()
 
 " reload vimrc on save
 augroup myvimrc
