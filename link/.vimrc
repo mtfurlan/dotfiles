@@ -364,6 +364,7 @@ function! _GSource(r,l1,l2) abort
     let res = system('git -C "' .dir.'" source "' . filename .'" ' . a:l1 . ' ' . a:l2)
   endif
   let res = substitute(res, '\n$', '', '')
+  redraw
   echo res
 endfunction
 command! -range GSource call _GSource(<range>,<line1>,<line2>)
