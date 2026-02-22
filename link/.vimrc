@@ -21,8 +21,10 @@ call plug#begin('~/.vim/plugged')
 
 Plug 'elzr/vim-json'
 Plug 'edkolev/tmuxline.vim'
-Plug 'vim-airline/vim-airline'
-Plug 'vim-airline/vim-airline-themes'
+"Plug 'vim-airline/vim-airline'
+"Plug 'vim-airline/vim-airline-themes'
+Plug 'itchyny/lightline.vim'
+Plug 'mengelbrecht/lightline-bufferline'
 " fucks with <C-J>
 "Plug 'vim-latex/vim-latex'
 Plug 'tpope/vim-sleuth'
@@ -162,6 +164,26 @@ let g:airline_theme='wombat'
 let g:airline#extensions#tabline#enabled = 1
 let g:airline#extensions#tabline#buffer_nr_show = 1
 let g:airline#extensions#ale#enabled = 1
+
+" === lightline
+let g:lightline = {
+      \ 'colorscheme': 'one',
+      \ 'active': {
+      \   'left': [ [ 'mode', 'paste' ], [ 'readonly', 'filename', 'modified' ] ]
+      \ },
+      \ 'tabline': {
+      \   'left': [ ['buffers'] ],
+      \   'right': [ ['close'] ]
+      \ },
+      \ 'component_expand': {
+      \   'buffers': 'lightline#bufferline#buffers'
+      \ },
+      \ 'component_type': {
+      \   'buffers': 'tabsel'
+      \ }
+      \ }
+let g:lightline#bufferline#show_number = 1
+set showtabline=2
 
 let g:ale_lint_on_text_changed = 0
 let g:ale_lint_on_insert_leave = 0
