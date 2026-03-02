@@ -156,3 +156,7 @@ function urldecode {
 }
 
 alias fuck=f
+
+alias utc="TZ=Z date"
+
+alias valias="vim ~/.dotfiles/source/10-aliases-sh"
