@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+#shellcheck disable=SC2120 # optional arg
+h () {
+    # if arguments, print them
+    [ $# == 0 ] || echo "$*"
+    name=$(basename "${BASH_SOURCE[0]}")
+  cat <<EOF
+Usage: $name [OPTION]... PATH
+  run commands from stdin on all git repos in PATH
+  will use vipe if stdin is terminal cause multiline input sucks
+Available options:
+  -h, --help       display this help and exit
+Example:
+  echo -e 'git log origin/HEAD --since="1 day ago" --author=foo@bar.tld' | $name ~/somewhere
+EOF
+
+    # if args, exit 1 else exit 0
+    [ $# == 0 ] || exit 1
+    exit 0
+}
+
+msg() {
+    echo >&2 -e "${1-}"
+}
+
+die() {
+    local msg=$1
+    local code=${2-1} # default exit status 1
+    msg "$msg"
+    exit "$code"
+}
+
+if ! PARSED_ARGS=$(getopt -o hd:f --long help,dir:,force -n "$0" -- "$@") ; then
+    h "getopt issue ^"
+fi
+eval set -- "$PARSED_ARGS"
+
+while true ; do
+    case "$1" in
+        -h|--help) h ;;
+        --) shift ; break ;;
+        *) die "issue parsing args, unexpected argument '$1'!" ;;
+    esac
+done
+
+path=${1:-}
+if [[ -z "$path" ]]; then
+    h "must pass path"
+fi
+
+# if stdin has terminal
+if [ -t 0 ]; then
+  commands=$(echo "# please put commands here" | vipe)
+else # read from stdin
+    commands=$(</dev/stdin)
+fi
+
+msg "running commands:\n$commands"
+
+find "$path" -type d -exec test -e '{}/.git' ';' -prune -print0 |
+    while IFS= read -r -d '' d; do
+        msg "processing $d"
+        pushd "$d" >/dev/null
+        echo "$commands" | bash 2> >(sed 's/^/    /' >&2) | sed 's/^/    /'
+        popd >/dev/null
+    done
