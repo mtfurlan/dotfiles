@@ -115,7 +115,7 @@ fi
 
 
 
-fields=$(echo "$url" | perl -ne '($host, $owner, $repo) = /^(?:https?:\/\/|git@)([^:\/]*)(?:[:\/])([^\/]*)\/(.*?)(?:.git)?+$/; print "$host\t$owner\t$repo";')
+fields=$(echo "$url" | perl -ne '($host, $owner, $repo) = /^(?:https?:\/\/|git@)([^:\/]*)(?:[:\/])([^\/]*)\/(.*?)(?:.git)?+\/?$/; print "$host\t$owner\t$repo";')
 providerStr=$(echo "$fields" | cut -d$'\t' -f1)
 owner=$(echo "$fields" | cut -d$'\t' -f2)
 repo=$(echo "$fields" | cut -d$'\t' -f3)
