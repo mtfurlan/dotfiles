@@ -12,6 +12,7 @@ Usage: $name [OPTION]... PATH
   will use vipe if stdin is terminal cause multiline input sucks
 Available options:
   -h, --help       display this help and exit
+  -u, --update     update before doing stuff
 Example:
   echo -e 'git log origin/HEAD --since="1 day ago" --author=foo@bar.tld' | $name ~/somewhere
 EOF
@@ -32,14 +33,16 @@ die() {
     exit "$code"
 }
 
-if ! PARSED_ARGS=$(getopt -o hd:f --long help,dir:,force -n "$0" -- "$@") ; then
+if ! PARSED_ARGS=$(getopt -o hu --long help,update -n "$0" -- "$@") ; then
     h "getopt issue ^"
 fi
 eval set -- "$PARSED_ARGS"
 
+update=false
 while true ; do
     case "$1" in
         -h|--help) h ;;
+        -u|--update) update=true; shift ;;
         --) shift ; break ;;
         *) die "issue parsing args, unexpected argument '$1'!" ;;
     esac
@@ -59,7 +62,32 @@ fi
 
 msg "running commands:\n$commands"
 
-find "$path" -type d -exec test -e '{}/.git' ';' -prune -print0 |
+findArgs=("$path" -type d -exec test -e '{}/.git' ';' -prune)
+
+doUpdate()
+{
+    # DO NOT USE ANY OUTSIDE DEFINED STUFF
+    # passed to subprocess with export -f
+    d=${1?-must pass dir}
+    echo >&2 "updating $d"
+    remote=$(git -C "$d" remote | head -n1)
+    defaultBranch=$(git -C "$d" rev-parse --abbrev-ref "$remote/HEAD" | sed "s/$remote\///" || git -C "$d" remote set-head "$remote" -a | sed 's/.*set to //')
+    curBranch=$(git -C "$d" rev-parse --abbrev-ref HEAD)
+    git -C "$d" fetch --all --quiet
+    if [[ "$curBranch" = "$defaultBranch" ]]; then
+        git -C "$d" pull --quiet
+    else
+        git -C "$d" fetch "$remote" "$defaultBranch:$defaultBranch" --quiet
+    fi
+}
+
+if [ "$update" = true ]; then
+    export -f doUpdate
+    # update multiple repos at a time with xargs -P
+    find "${findArgs[@]}" -print0 | xargs -0 -n1 -P30 bash -c 'doUpdate "$@"' bash
+fi
+
+find "${findArgs[@]}" -print0 |
     while IFS= read -r -d '' d; do
         msg "processing $d"
         pushd "$d" >/dev/null
