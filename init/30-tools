@@ -111,6 +111,9 @@ update_tools() {
   wget -q -O ~/.local/bin/hey "https://storage.googleapis.com/hey-releases/hey_linux_amd64"
   chmod +x ~/.local/bin/hey
 
+  wget -q -O ~/.local/bin/multi-proxy-downloader "$(get_github_latest_release_file https://github.com/patryk-ku/multi-proxy-downloader multi-proxy-downloader-linux)"
+  chmod +x ~/.local/bin/multi-proxy-downloader
+
   if ! grep -q "use dsf" ~/.gitconfiglocal ; then
     cat <<EOF >> ~/.gitconfiglocal
 # use dsf
