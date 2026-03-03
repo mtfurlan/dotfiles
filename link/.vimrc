@@ -20,7 +20,6 @@ call plug#begin('~/.vim/plugged')
 "Plug 'krisajenkins/vim-postgresql-syntax'
 
 Plug 'elzr/vim-json'
-Plug 'edkolev/tmuxline.vim'
 "Plug 'vim-airline/vim-airline'
 "Plug 'vim-airline/vim-airline-themes'
 Plug 'itchyny/lightline.vim'
@@ -197,22 +196,6 @@ let g:ale_virtualtext_cursor = 'current'
 let g:livedown_browser = "google-chrome"
 let g:livedown_open = 0
 map <C-P> :LivedownToggle<CR>
-
-" === Tmuxline ===
-"	\'c'    : '#H',
-let g:tmuxline_preset = {
-    \'a'    : '#S',
-    \'b'    : '#W',
-    \'win'  : '#I #W',
-    \'cwin' : '#I #W',
-    \'x'    : '#(upower -i /org/freedesktop/UPower/devices/battery_BAT0 | grep -E "time to empty|percentage" |xargs echo)',
-    \'y'    : ['%Y-%m-%d', '%H:%M'],
-    \'z'    : '#h',
-    \'options': {
-        \'status-justify': 'left'
-    \}
-\}
-
 
 " ===Nerdtree binding===
 map <C-n> :NERDTreeToggle<CR>
