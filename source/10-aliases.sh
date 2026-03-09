@@ -159,7 +159,7 @@ alias fuck=f
 
 alias utc="TZ=Z date"
 
-alias valias="vim ~/.dotfiles/source/10-aliases-sh"
+alias valias="vim ~/.dotfiles/source/10-aliases.sh"
 
 function downloadFast {
     multi-proxy-downloader -proxy <(curl -s https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/https/data.txt & curl -s https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/http/data.txt & curl -s https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/socks5/data.txt ) "$@"
