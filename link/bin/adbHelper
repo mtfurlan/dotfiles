@@ -1,0 +1,142 @@
+#!/bin/bash
+set -euo pipefail
+
+
+# shellcheck disable=SC2120
+h () {
+    # if arguments, print them
+    [ $# == 0 ] || echo "$*"
+
+  cat <<EOF
+Usage: $(basename "${BASH_SOURCE[0]}") [OPTION]... <SUBCOMMAND>
+Available options:
+  -h, --help       display this help and exit
+  -b               create branch
+Subcommands:
+  list: list apks
+  pull [apk]: pull an apk
+  log [apk]: logcat apk
+EOF
+
+    # if args, exit 1 else exit 0
+    [ $# == 0 ] || exit 1
+    exit 0
+}
+
+msg() {
+    echo >&2 -e "${1-}"
+}
+
+die() {
+    local msg=$1
+    local code=${2-1} # default exit status 1
+    msg "$msg"
+    exit "$code"
+}
+
+
+
+checkAPK()
+{
+    targetAPK=${1:?must pass target apk}
+    doublecheck=${2:-false}
+
+    apk=$(doList | grep "$targetAPK")
+
+
+    if [[ $(echo "$apk" | wc -l) -ge 2 ]]; then
+        msg "multiple matches, pick a better filter"
+        # shellcheck disable=SC2001
+        msg "$(echo "$apk" | sed 's/^/    /')"
+        exit 1
+    fi
+
+    if [ "$doublecheck" = true ]; then
+        while true; do
+            read -r -p "is your apk $apk [Y/n] " response
+            case "$response" in
+                [nN][oO]|[nN])
+                    exit 0
+                    ;;
+                [yY][eE][sS]|[yY]|'')
+                    break
+                    ;;
+                *)
+                    echo "unknown input?"
+                    ;;
+            esac
+        done
+    fi
+}
+
+doPull()
+{
+    targetAPK=${1:-}
+    if [ -z "$targetAPK" ]; then
+        h "need to pass in target apk"
+    fi
+
+
+    checkAPK "$targetAPK" true
+
+
+    path=$(adb shell pm path "$apk" | grep base | sed 's/^package://')
+    adb pull "$path" "$apk.apk"
+
+    msg "your apk is now $(realpath "$apk.apk")"
+}
+
+
+doList()
+{
+    adb shell pm list packages | sed 's/^package://'
+}
+
+
+doLog()
+{
+    targetAPK=${1:-}
+    if [ -z "$targetAPK" ]; then
+        h "need to pass in target apk"
+    fi
+
+
+    checkAPK "$targetAPK"
+
+    adb logcat |  grep -F "$(adb shell ps | grep "$targetAPK" | tr -s '[:space:]' ' ' | cut -d' ' -f2)"
+
+}
+
+if ! PARSED_ARGS=$(getopt -o h --long help -n "$0" -- "$@") ; then
+    h "getopt issue ^"
+fi
+eval set -- "$PARSED_ARGS"
+
+while true ; do
+    case "$1" in
+        -h|--help) h ;;
+        --) shift ; break ;;
+        *) die "issue parsing args, unexpected argument '$0'!" ;;
+    esac
+done
+
+subcommand=${1:-}
+shift
+if [ -z "$subcommand" ]; then
+    h "need to pass in subcommand"
+fi
+
+case "$subcommand" in
+    list)
+        doList "$@"
+        ;;
+    pull)
+        doPull "$@"
+        ;;
+    log)
+        doLog "$@"
+        ;;
+    *)
+        h "unknown subcommands '$subcommand'"
+        ;;
+esac
