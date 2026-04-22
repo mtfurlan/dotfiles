@@ -1,0 +1,11 @@
+[general]
+import = [
+    "~/.config/alacritty/themes/kitty.toml"
+]
+[keyboard]
+bindings = [
+    { key = "Return", mods = "Shift", chars = "\u001b[13;2u" }
+]
+
+[font]
+size = 9.6 # default 11.25
