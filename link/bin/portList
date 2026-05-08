@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+#shellcheck disable=SC2120 # optional arg
+h () {
+    # if arguments, print them
+    [ $# == 0 ] || echo "$*"
+
+    cat <<EOF
+Usage: $(basename "${BASH_SOURCE[0]}") [OPTION]...
+  list listening ports
+Available options:
+    -h, --help      Print this help and exit
+EOF
+    # if args, exit 1 else exit 0
+    [ $# == 0 ] || exit 1
+    exit 0
+}
+
+msg() {
+    echo >&2 -e "${1-}"
+}
+
+die() {
+    local msg=$1
+    local code=${2-1} # default exit status 1
+    msg "$msg"
+    exit "$code"
+}
+
+exists() {
+    command -v "$@" >/dev/null
+}
+
+# getopt short options go together, long options have commas
+if ! PARSED_ARGS=$(getopt -o h --long help -n "$0" -- "$@") ; then
+    h "getopt issue ^"
+fi
+eval set -- "$PARSED_ARGS"
+
+while true ; do
+    case "$1" in
+        -h|--help) h ;;
+        --) shift ; break ;;
+        *) die "issue parsing args, unexpected argument '$0'!" ;;
+    esac
+done
+
+if exists netstat; then
+    sudo netstat -ntlup
+    exit $?
+fi
+
+if exists lsof; then
+    sudo lsof -i -P | grep -E "(TCP.*LISTEN|UDP)" --color=never
+    exit $?
+fi
+
+if exists ss; then
+    sudo ss -lntup
+    exit $?
+fi
+
+die "missing netstat, lsof, and ss"
