@@ -1,0 +1,11 @@
+#!/bin/bash
+# add up column N
+# https://utcc.utoronto.ca/~cks/space/blog/sysadmin/LittleScriptsIX?showcomments
+# remember datamash exists for more complicated maths
+set -x
+field=${1:-1}
+if [[ $# -gt 0 ]]; then
+   shift
+fi
+# don't print sum, awk will use exponential notation
+awk "$@" '{sum += $('"$field"') } END {printf "%d\n", sum}'

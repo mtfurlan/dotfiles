@@ -1,0 +1,6 @@
+#!/bin/sh
+# extract field $1
+# https://utcc.utoronto.ca/~cks/space/blog/sysadmin/LittleScriptsIX?showcomments
+field=${1:?must pass field}
+shift
+awk "$@" '{print $('"$field"') }'
