@@ -1,11 +1,58 @@
-[general]
-import = [
-    "~/.config/alacritty/themes/kitty.toml"
-]
 [keyboard]
 bindings = [
     { key = "Return", mods = "Shift", chars = "\u001b[13;2u" }
 ]
 
 [font]
-size = 9.6 # default 11.25
+size = 9 # default 11.25
+
+
+# based on https://github.com/alacritty/alacritty-theme/blob/master/themes/kitty.toml
+[colors.primary]
+background = '#000000'
+foreground = '#dddddd'
+
+# Cursor colors
+[colors.cursor]
+text   = '#111111'
+cursor = '#cccccc'
+
+# Normal colors
+[colors.normal]
+black   = '#000000'
+red     = '#cc0403'
+green   = '#19cb00'
+yellow  = '#cecb00'
+blue    = '#0d73cc'
+magenta = '#cb1ed1'
+cyan    = '#007575'
+white   = '#dddddd'
+
+# Bright colors
+[colors.bright]
+black   = '#767676'
+red     = '#f2201f'
+green   = '#23fd00'
+yellow  = '#fffd00'
+blue    = '#1a8fff'
+magenta = '#fd28ff'
+cyan    = '#00c6c7'
+white   = '#ffffff'
+
+[colors]
+draw_bold_text_with_bright_colors = true
+
+[selection]
+semantic_escape_chars = ",│`|\"' ()[]{}<>\t"
+
+
+# only open urls on ctrl click, not just click
+[[hints.enabled]]
+binding = { key = "U", mods = "Control|Shift" }
+command = "xdg-open"
+hyperlinks = true
+mouse.enabled = true
+mouse.mods = "Control"
+post_processing = true
+persist = false
+regex = "(ipfs:|ipns:|magnet:|mailto:|gemini://|gopher://|https://|http://|news:|file:|git://|ssh:|ftp://)[^\u0000-\u001F\u007F-\u009F<>\"\\s{-}\\^⟨⟩‘]+"
