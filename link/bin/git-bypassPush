@@ -155,9 +155,8 @@ case "$providerStr" in
         ;;
 esac
 
-if [ "$force" = true ]; then
-    args=(--force-with-lease)
-else
     args=()
+if [ "$force" = true ]; then
+    args+=(--force-with-lease)
 fi
 git push "${args[@]}"
