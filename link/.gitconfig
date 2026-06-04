@@ -46,7 +46,7 @@
 	smash = !git ir
 
 	# interactive rebase
-	ir = !sh -c 'git rebase -i origin/${1-master}' -
+	ir = !sh -c 'git rebase -i ${1-develop}' -
 
 	upQuiet = !git pull --rebase --prune --autostash --recurse-submodules
 
