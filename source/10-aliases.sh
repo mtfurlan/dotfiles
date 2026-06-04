@@ -101,7 +101,7 @@ quoteSubst() {
 }
 
 function unicodePoint {
-    echo "using uniname, please start using that directly"
+    echo "using uniname, please start using that directly(echo -n <stuff> | uniname)"
     echo -n "$*" | uniname
 }
 
