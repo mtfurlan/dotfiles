@@ -1,13 +1,14 @@
 #!/bin/bash
 set -euo pipefail
 
-# shellcheck disable=SC2120
-help () {
+
+#shellcheck disable=SC2120 # optional arg
+h () {
     # if arguments, print them
     [ $# == 0 ] || echo "$*"
 
   cat <<EOF
-Usage: $0
+Usage: $(basename "${BASH_SOURCE[0]}") [OPTION]...
 bypass branch restrictions when pushing
   -h, --help       display this help and exit
   -f, --force      push with --force-with-lease
@@ -22,6 +23,24 @@ msg() {
     echo >&2 -e "${1-}"
 }
 
+verbosity=0
+logLevelGE()
+{
+    level=${1:?must pass log level}
+    if [[ "$verbosity" -ge "$level" ]]; then
+        return 0
+    fi
+    return 1
+}
+log()
+{
+    level=${1:?must pass log level}
+    shift;
+    if logLevelGE "$level"; then
+        msg "$@"
+    fi
+}
+
 die() {
     local msg=$1
     local code=${2-1} # default exit status 1
@@ -29,48 +48,112 @@ die() {
     exit "$code"
 }
 
-# getopt short options go together, long options have commas
-TEMP=$(getopt -o hf --long help,force -n "$0" -- "$@")
-#shellcheck disable=SC2181
-if [ $? != 0 ] ; then
-    die "something wrong with getopt"
+if ! PARSED_ARGS=$(getopt -o hf --long help,force -n "$0" -- "$@") ; then
+    h "getopt issue ^"
 fi
-eval set -- "$TEMP"
+eval set -- "$PARSED_ARGS"
 
 force=false
 while true ; do
     case "$1" in
-        -h|--help) help; ;;
-        -f|--force) force=true ; shift ;;
+        -h|--help) h ;;
+        -f|--force) force=true; shift ;;
         --) shift ; break ;;
-        *) die "issue parsing args, unexpected argument '$0'!" ;;
+        *) die "issue parsing args, unexpected argument '$1'!" ;;
     esac
 done
 
+function urlencode {
+    perl -MURI::Escape -e 'print uri_escape($ARGV[0])' "$@"
+}
 
+configureGithub()
+{
+    local owner=$1
+    local repo=$1
+    local branch=$1
+
+    ruleset=$(gh api "/repos/$owner/$repo/rules/branches/$branch" -q '.[] | select(.type == "pull_request") | .ruleset_id')
+    if [ -z "$ruleset" ]; then
+        die "no branch protection?"
+    fi
+
+    # disable rule
+    chronic gh api --verbose --method PUT "/repos/$owner/$repo/rulesets/$ruleset" -f "enforcement=disabled"
+
+    # always restore even on failure
+    restore()
+    {
+        chronic gh api --verbose --method PUT "/repos/$owner/$repo/rulesets/$ruleset" -f "enforcement=active"
+    }
+    trap 'restore' EXIT
+}
+
+
+configureGitlab()
+{
+    local owner=$1
+    local repo=$2
+    local branch=$3
+
+    tmp=$(mktemp -t dql_edit.XXXXXX)
+    trap 'rm -rf $tmp' EXIT
+
+    userid=$(glab api /user | jq .id)
+
+    push_access_id=$(glab api /projects/:id/protected_branches \
+        | tee "$tmp" \
+        | jq --argjson id "$userid" --arg branch "$branch" \
+        '.[] | select(.name == $branch) | .push_access_levels | .[] | select(.user_id == $id) | .id')
+
+    # if user already has access, don't request it
+    if [[ -z "$push_access_id" ]]; then
+        push_access_id=$(glab api -X PATCH "/projects/:id/protected_branches/$(urlencode "$branch")" \
+                -H "Content-Type: application/json" \
+                --input <(jq -cn --argjson id "$userid" '{"allow_force_push": true, "allowed_to_push": [{"user_id": $id}]}') \
+            | tee "$tmp" \
+            | jq --argjson id "$userid" \
+            '.push_access_levels | .[] | select(.user_id == $id) | .id')
+    fi
+
+
+    restore()
+    {
+        glab api -X PATCH "/projects/:id/protected_branches/$(urlencode "$branch")" \
+            -H "Content-Type: application/json" \
+            --input <(jq -cn --argjson id "$push_access_id" \
+                '{"allow_force_push": false, "allowed_to_push": [{"id": $id, "_destroy": true}]}') >/dev/null
+    }
+    trap 'restore' EXIT
+}
+
+
+
+
+###################################################################
 if ! url=$(git config --get "remote.$(git remote | head -n1).url"); then
     die "no remote?"
 fi
 
 # parse remote URL (git@ or https://) to "$owner/$repo"
-repo=$(echo "$url" | perl -pe 's#^(?:https|git)(?:://|@)(?:[^:/]*)(?:[:/])##; s/\.git$//')
+fields=$(echo "$url" | perl -ne '($host, $owner, $repo) = /^(?:https?:\/\/|git@)([^:\/]*)(?:[:\/])([^\/]*)\/(.*?)(?:.git)?+\/?$/; print "$host\t$owner\t$repo";')
+providerStr=$(echo "$fields" | cut -d$'\t' -f1)
+owner=$(echo "$fields" | cut -d$'\t' -f2)
+repo=$(echo "$fields" | cut -d$'\t' -f3)
 
 branch=$(git rev-parse --abbrev-ref HEAD)
 
-ruleset=$(gh api "/repos/$repo/rules/branches/$branch" -q '.[] | select(.type == "pull_request") | .ruleset_id')
-if [ -z "$ruleset" ]; then
-    die "no branch protection?"
-fi
-
-# disable rule
-chronic gh api --verbose --method PUT "/repos/$repo/rulesets/$ruleset" -f "enforcement=disabled"
-
-# always restore even on failure
-function restoreRule(){
-    chronic gh api --verbose --method PUT "/repos/$repo/rulesets/$ruleset" -f "enforcement=active"
-}
-trap restoreRule EXIT
-
+case "$providerStr" in
+    *"github.com"*)
+        configureGithub "$owner" "$repo" "$branch"
+        ;;
+    *"gitlab.com"*)
+        configureGitlab "$owner" "$repo" "$branch"
+        ;;
+    *)
+        die "don't support $providerStr yet"
+        ;;
+esac
 
 if [ "$force" = true ]; then
     args=(--force-with-lease)
