@@ -2,7 +2,6 @@
 # add up column N
 # https://utcc.utoronto.ca/~cks/space/blog/sysadmin/LittleScriptsIX?showcomments
 # remember datamash exists for more complicated maths
-set -x
 field=${1:-1}
 if [[ $# -gt 0 ]]; then
    shift
