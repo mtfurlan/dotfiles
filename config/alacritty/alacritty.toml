@@ -4,7 +4,7 @@ bindings = [
 ]
 
 [font]
-size = 9 # default 11.25
+size = 9.6 # default 11.25
 
 
 # based on https://github.com/alacritty/alacritty-theme/blob/master/themes/kitty.toml
@@ -56,3 +56,14 @@ mouse.mods = "Control"
 post_processing = true
 persist = false
 regex = "(ipfs:|ipns:|magnet:|mailto:|gemini://|gopher://|https://|http://|news:|file:|git://|ssh:|ftp://)[^\u0000-\u001F\u007F-\u009F<>\"\\s{-}\\^⟨⟩‘]+"
+
+
+
+[scrolling]
+  # How many lines of scrollback to keep,
+  # '0' will disable scrolling.
+  history= 10000
+
+  # Number of lines the viewport will move for every line
+  # scrolled when scrollback is enabled (history > 0).
+  multiplier= 3
