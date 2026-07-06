@@ -63,10 +63,6 @@ while true ; do
     esac
 done
 
-function urlencode {
-    perl -MURI::Escape -e 'print uri_escape($ARGV[0])' "$@"
-}
-
 configureGithub()
 {
     local owner=$1
@@ -108,7 +104,7 @@ configureGitlab()
 
     # if user already has access, don't request it
     if [[ -z "$push_access_id" ]]; then
-        push_access_id=$(glab api -X PATCH "/projects/:id/protected_branches/$(urlencode "$branch")" \
+        push_access_id=$(glab api -X PATCH "/projects/:id/protected_branches/:branch" \
                 -H "Content-Type: application/json" \
                 --input <(jq -cn --argjson id "$userid" '{"allow_force_push": true, "allowed_to_push": [{"user_id": $id}]}') \
             | tee "$tmp" \
@@ -119,7 +115,7 @@ configureGitlab()
 
     restore()
     {
-        glab api -X PATCH "/projects/:id/protected_branches/$(urlencode "$branch")" \
+        glab api -X PATCH "/projects/:id/protected_branches/:branch" \
             -H "Content-Type: application/json" \
             --input <(jq -cn --argjson id "$push_access_id" \
                 '{"allow_force_push": false, "allowed_to_push": [{"id": $id, "_destroy": true}]}') >/dev/null
