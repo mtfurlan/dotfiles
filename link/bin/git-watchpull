@@ -1,0 +1,11 @@
+#!/bin/bash
+set -euo pipefail
+spin=("-" "\\" "|" "/")
+
+echo -ne "${spin[0]}"
+i=1
+while git pull | grep -q "Already up to date."; do
+    echo -ne "\b${spin[i]}"
+    i=$(bc <<< "($i + 1) % ${#spin[@]}")
+    sleep 0.5
+done
