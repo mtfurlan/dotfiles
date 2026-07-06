@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# to save:
+# dconf dump /org/mate/panel/ > ~/.dotfiles/init/60-mate-config.dconf
+# maybe needed, not sure:
+# dconf reset /org/mate/panel/
+checkInstalled dconf "dxonf required, going to try to apt install dconf-cli" || sudo apt install dconf-cli
+dconf load /org/mate/panel/ < ~/.dotfiles/init/60-mate-config.dconf

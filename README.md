@@ -30,12 +30,13 @@ TODO:
 
 ## manual config stuff
 ### mate clock date format
-* `dconf-editor`, `org / mate / panel / objects / clock / prefs`
-* Change `format` to "custom"
-* `custom-format` to
-  ```
-  %F | %a %b | %T
-  ```
+```
+apt install dconf-cli
+dconf write /org/mate/panel/objects/clock/prefs/format "'custom'"
+dconf write /org/mate/panel/objects/clock/prefs/custom-format "'%F | %a %b | %T'"
+dconf write /org/mate/panel/objects/clock/prefs/show-seconds "true"
+```
+should be replaced with init/55-debian-mate though
 
 ### automounting disks
 * Disable mate automounting: `gsettings set org.mate.media-handling automount false`
