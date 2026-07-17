@@ -19,7 +19,7 @@ if [ -a /etc/debian_version ]; then
       bash --rcfile <(echo "PS1='subshell > '") -i
     fi
     sudo apt-get update
-    sudo apt-get install vim-tiny tmux git curl wget
+    sudo apt-get install vim tmux git curl wget
 else
     e_warn "not debian, doing nothing"
 fi
