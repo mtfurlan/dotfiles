@@ -4,7 +4,7 @@ set -euo pipefail
 GITHUB_KEY_TYPE=ed25519
 
 github_remote_works() {
-    ssh -T -o StrictHostKeyChecking=accept-new git@github.com 2>&1 | grep -q "successfully authenticated"
+    ssh -T -o StrictHostKeyChecking=accept-new git@github.com 2>&1 | grep -q 'successfully authenticated'
 }
 
 setup_github() {
@@ -38,7 +38,7 @@ fi
 
 # TODO: get ~/.ssh/config setup properly
 
-if github_remote_works ; then
+if ! github_remote_works ; then
     echo "github key works"
     if ! grep -q "pretend everything is git not https" ~/.gitconfiglocal 2>/dev/null ; then
         cat <<EOF >> ~/.gitconfiglocal
