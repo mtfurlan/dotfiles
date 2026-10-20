@@ -1,3 +1,11 @@
 ! caps lock -> escape
 clear Lock
 keycode  66 = Escape
+
+! copilot key bullshit:
+! Super_L down
+! Shift_L down
+! XF86TouchpadOff down
+keycode 201 = Multi_key
+!keysym  XF86TouchpadOff = Multi_key Multi_key
+! 6.14 will map it to F23 https://www.phoronix.com/news/Linux-6.14-Input
