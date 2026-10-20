@@ -237,7 +237,7 @@ function init_files() {
         IFS=$'\n' read -d '' -r -a menu_selects < "$init_file"
     else
         # Otherwise default to all scripts not specifically for other OSes
-        # also only default scripts named *_opt
+        # also only default scripts not named *_opt
         mapfile -t oses < <(get_os 1)
 
         for opt in "${menu_options[@]}"; do
