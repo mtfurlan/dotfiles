@@ -2,6 +2,8 @@ set auto-load safe-path /
 set history save on
 set startup-quietly on
 
+set pagination off
+
 # https://stackoverflow.com/a/54784260/2423187
 define xxd
   if $argc < 2
