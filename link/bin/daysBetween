@@ -1,0 +1,45 @@
+#!/usr/bin/env python3
+from dataclasses import dataclass
+import argparse
+import datetime
+import os
+import sys
+
+
+@dataclass
+class MyArgs:
+    d1: str
+    d2: str
+    format: str
+
+def parseArgs() -> MyArgs:
+    parser = argparse.ArgumentParser(
+        description=(
+            "  Print DATE1 minus DATE2 in whole days.\n"
+            "  Both dates are parsed using FORMAT, which defaults to %Y-%m-%d."
+        ),
+        )
+    parser.add_argument("d1", type=str,
+                        help="first date")
+    parser.add_argument("d2", type=str,
+                        help="second date")
+    parser.add_argument("format", type=str,
+                        help="format to parse dates with", nargs="?",
+                        default="%Y-%m-%d")
+    return MyArgs(**vars(parser.parse_args()))
+
+def main():
+    args = parseArgs()
+
+    try:
+        date1 = datetime.datetime.strptime(args.d1, args.format)
+        date2 = datetime.datetime.strptime(args.d2, args.format)
+    except ValueError as error:
+        print(f"invalid date or format: {error}", file=sys.stderr)
+        return 2
+
+    print((date1 - date2).days)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

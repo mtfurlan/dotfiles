@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+h () {
+    [ $# == 0 ] || echo "$*"
+    cat <<EOF
+Usage: $(basename "${BASH_SOURCE[0]}") [OPTION]... [--] <SEARCH> <REPLACEMENT>
+
+  Replace literal <SEARCH> text with <REPLACEMENT> in files found by ag.
+  Matching files are modified in place. Requires ag, xargs, sed, and tr.
+
+Available options:
+  -h, --help       Display this help and exit
+EOF
+    [ $# == 0 ] || exit 1
+    exit 0
+}
+
+msg () {
+    echo "$*" >&2
+}
+
+die () {
+    msg "$*"
+    exit 1
+}
+
+quoteRe () {
+    # https://stackoverflow.com/a/29613573
+    # shellcheck disable=SC1003
+    sed -e 's/[^^\]/[&]/g; s/[\^]/\\&/g; $!a\'$'\n''\\n' <<<"${1:-}" | tr -d '\n'
+}
+
+quoteSubst () {
+    # read reaches EOF without a NUL delimiter; print the bytes read anyway.
+    local result=''
+    IFS= read -d '' -r result < <(sed -e ':a' -e '$!{N;ba' -e '}' -e 's/[&/\]/\\&/g; s/\n/\\&/g' <<<"${1:-}") || :
+    printf '%s' "${result%$'\n'}"
+}
+
+if ! PARSED_ARGS=$(getopt -o h --long help -n "$0" -- "$@") ; then
+    h "getopt issue ^"
+fi
+eval set -- "$PARSED_ARGS"
+while true ; do
+    case "$1" in
+        -h|--help) h ;;
+        --) shift ; break ;;
+        *) die "issue parsing args, unexpected argument '$1'!" ;;
+    esac
+done
+
+search=${1:-}
+replacement=${2:-}
+search_re=$(quoteRe "$search")
+replacement_escaped=$(quoteSubst "$replacement")
+# Preserve the original function's final xargs status rather than ag's status.
+xargs -0 -l -- sed -i "s/$search_re/$replacement_escaped/g" < <(ag -l0 "$search_re")

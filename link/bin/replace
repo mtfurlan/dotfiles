@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+h () {
+    [ $# == 0 ] || echo "$*"
+    cat <<EOF
+Usage: $(basename "${BASH_SOURCE[0]}") [OPTION]... [--] <SEARCH> <REPLACEMENT>
+
+  Replace extended-regex <SEARCH> with <REPLACEMENT> in files found by ag.
+  Matching files are modified in place. Requires ag, xargs, and sed.
+
+Available options:
+  -h, --help       Display this help and exit
+EOF
+    [ $# == 0 ] || exit 1
+    exit 0
+}
+
+msg () {
+    echo "$*" >&2
+}
+
+die () {
+    msg "$*"
+    exit 1
+}
+
+if ! PARSED_ARGS=$(getopt -o h --long help -n "$0" -- "$@") ; then
+    h "getopt issue ^"
+fi
+eval set -- "$PARSED_ARGS"
+while true ; do
+    case "$1" in
+        -h|--help) h ;;
+        --) shift ; break ;;
+        *) die "issue parsing args, unexpected argument '$1'!" ;;
+    esac
+done
+
+search=${1:-}
+replacement=${2:-}
+# Preserve the original function's final xargs status rather than ag's status.
+xargs -0 -l -- sed -E -i "s/$search/$replacement/g" < <(ag -l0 "$search")

@@ -43,7 +43,10 @@ whatismyip()
     echo -e "ipv4: $ipv4\nipv6: $ipv6"
 }
 
-alias duc="du --max-depth=1 -ha | sort -rh | sed 's/\.\///' | sed /^0/d"
+duc()
+{
+    du --max-depth=1 -ha "$@" | sort -rh | sed 's/\.\///' | sed '/^0/d'
+}
 
 mkcd () { mkdir -p "$@" && cd "$@" || echo "failed to cd '$*'?"; }
 
@@ -61,52 +64,22 @@ gcd()
     cd "$repo_name" || echo "failed to cd to cloned repo '$repo_name'?"
 }
 
-extract () {
-    if [ -f "$1" ] ; then
-      case $1 in
-        *.tar | *.tar.* | *.tgz | *.txf) tar xf     "$1"     ;;
-        *.bz2)                           bunzip2    "$1"     ;;
-        *.rar)                           unrar x    "$1"     ;;
-        *.gz)                            gunzip     "$1"     ;;
-        *.tbz2)                          tar xjf    "$1"     ;;
-        *.zip)                           unzip      "$1"     ;;
-        *.Z)                             uncompress "$1"     ;;
-        *.7z)                            7z x       "$1"     ;;
-        *.xz)                            unxz -k    "$1"     ;;
-        *)     echo "'$1' cannot be extracted via extract()" ;;
-         esac
-     else
-         echo "'$1' is not a valid file"
-     fi
-}
-
 function dsf {
     diff -u "$@" | diff-so-fancy | less -RF
 }
 
 alias gitaddWithoutWhitespace='git diff -U0 -w --no-color | git apply --cached --ignore-whitespace --unidiff-zero -'
 
-
-# https://stackoverflow.com/a/29613573
-# SYNOPSIS
-#   quoteRe <text>
-# shellcheck disable=SC1003
-quoteRe() { sed -e 's/[^^\]/[&]/g; s/[\^]/\\&/g; $!a\'$'\n''\\n' <<<"$1" | tr -d '\n'; }
-
-# SYNOPSIS
-#  quoteSubst <text>
-quoteSubst() {
-  IFS= read -d '' -r < <(sed -e ':a' -e '$!{N;ba' -e '}' -e 's/[&/\]/\\&/g; s/\n/\\&/g' <<<"$1")
-  printf %s "${REPLY%$'\n'}"
-}
-
 function unicodePoint {
     echo "using uniname, please start using that directly(echo -n <stuff> | uniname)"
     echo -n "$*" | uniname
 }
 
-function battlebots {
-    file=$1
+function upload-battlebots {
+    local file=$1
+    local ep
+    local tmpfile
+
     ep=$(basename "$file" | sed 's/.*S\([0-9]\{2\}\)E\([0-9]\{2\}\).*/s\1e\2/')
     tmpfile="/tmp/battlebots_${ep}.mp4"
     ffmpeg -i "$file" "$tmpfile"
@@ -114,38 +87,9 @@ function battlebots {
     echo "https://scz.s3.amazonaws.com/battlebots_${ep}.mp4"
 }
 
-function replace {
-    search=${1:-}
-    replace=${2:-}
-    ag -l0 "$search" | xargs -0 -l -- sed -E -i "s/$search/$replace/g"
-}
-
-function replaceSimple {
-    search=${1:-}
-    replace=${2:-}
-    ag -l0 "$(quoteRe "$search")" | xargs -0 -l -- sed -i "s/$(quoteRe "$search")/$(quoteSubst "$replace")/g"
-}
-
 alias copyToClipboard="xclip -sel clip"
 
-function daysBetween {
-    a=${1:-}
-    b=${2:-}
-    format=${3:-%Y-%m-%d}
-    python -c "import datetime; print((datetime.datetime.strptime('$a', '$format') - datetime.datetime.strptime('$b', '$format')).days)"
-}
-
 alias udevReload="sudo udevadm control --reload-rules && sudo udevadm trigger"
-
-function findRecent {
-    if [[ $# -eq 0 ]] ; then
-        echo "findRecent: do find but sort by most recent modification"
-        echo "calls 'find "\$@" ...' so use those args"
-        return 0
-    fi
-
-    find "$@" -printf "%T+ %h%f\n" 2>/dev/null | sort -r
-}
 
 
 function urlencode {
@@ -158,9 +102,3 @@ function urldecode {
 alias fuck=f
 
 alias utc="TZ=Z date"
-
-alias valias="vim ~/.dotfiles/source/10-aliases.sh"
-
-function downloadFast {
-    multi-proxy-downloader -proxy <(curl -s https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/https/data.txt & curl -s https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/http/data.txt & curl -s https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/socks5/data.txt ) "$@"
-}

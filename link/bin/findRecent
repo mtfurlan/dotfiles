@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# shellcheck disable=SC2120,SC2119
+h () {
+    [ $# == 0 ] || echo "$*"
+    cat <<EOF
+Usage: $(basename "${BASH_SOURCE[0]}") -h|--help
+       $(basename "${BASH_SOURCE[0]}") [--] [find-argument]...
+
+  Run find with the supplied arguments and sort paths by modification time,
+  newest first.
+
+Available options:
+  -h, --help       Display this help and exit
+EOF
+    [ $# == 0 ] || exit 1
+    exit 0
+}
+
+case "${1:-}" in
+    -h|--help) h ;;
+esac
+
+# Process substitution keeps find's intentionally suppressed failures from
+# triggering pipefail; sort's status remains the command's status.
+sort -r < <(find "$@" -printf '%T+ %h%f\n' 2>/dev/null)

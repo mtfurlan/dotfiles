@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# shellcheck disable=SC2120,SC2119
+h () {
+    [ $# == 0 ] || echo "$*"
+    cat <<EOF
+Usage: $(basename "${BASH_SOURCE[0]}") -h|--help
+       $(basename "${BASH_SOURCE[0]}") [downloader-argument]...
+
+  Run multi-proxy-downloader with proxy lists fetched using curl.
+
+Available options:
+  -h, --help       Display this help and exit
+EOF
+    [ $# == 0 ] || exit 1
+    exit 0
+}
+
+case "${1:-}" in
+    -h|--help) h ;;
+esac
+
+proxy_lists=(
+    https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/https/data.txt
+    https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/http/data.txt
+    https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/socks5/data.txt
+)
+
+exec multi-proxy-downloader -proxy <(
+    for url in "${proxy_lists[@]}"; do
+        curl -s "$url" &
+    done
+    wait
+) "$@"

@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+h () {
+    [ $# == 0 ] || echo "$*"
+    cat <<EOF
+Usage: $(basename "${BASH_SOURCE[0]}") [OPTION]... [--] <ARCHIVE>
+
+  Extract <ARCHIVE> using the utility selected by its extension.
+  Supported formats include tar, bz2, rar, gz, zip, Z, 7z, and xz.
+
+Available options:
+  -h, --help       Display this help and exit
+EOF
+    [ $# == 0 ] || exit 1
+    exit 0
+}
+
+msg () {
+    echo "$*" >&2
+}
+
+die () {
+    msg "$*"
+    exit 1
+}
+
+if ! PARSED_ARGS=$(getopt -o h --long help -n "$0" -- "$@") ; then
+    h "getopt issue ^"
+fi
+eval set -- "$PARSED_ARGS"
+while true ; do
+    case "$1" in
+        -h|--help) h ;;
+        --) shift ; break ;;
+        *) die "issue parsing args, unexpected argument '$1'!" ;;
+    esac
+done
+if (($# == 0)); then
+    h 'ARCHIVE is required'
+fi
+
+file=$1
+if [[ -f $file ]]; then
+    case $file in
+        *.tar|*.tar.*|*.tgz|*.txf) tar xf "$file" ;;
+        *.bz2)                     bunzip2 "$file" ;;
+        *.rar)                     unrar x "$file" ;;
+        *.gz)                      gunzip "$file" ;;
+        *.tbz2)                    tar xjf "$file" ;;
+        *.zip)                     unzip "$file" ;;
+        *.Z)                       uncompress "$file" ;;
+        *.7z)                      7z x "$file" ;;
+        *.xz)                      unxz -k "$file" ;;
+        *) printf "'%s' cannot be extracted via extract()\n" "$file" ;;
+    esac
+else
+    printf "'%s' is not a valid file\n" "$file"
+fi
