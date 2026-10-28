@@ -4,7 +4,7 @@ set -euo pipefail
 #TODO: support -u or some way to speicy origin
 
 # shellcheck disable=SC2120
-help () {
+h () {
     # if arguments, print them
     [ $# == 0 ] || echo "$*"
 
@@ -39,156 +39,203 @@ die() {
     exit "$code"
 }
 
-# getopt short options go together, long options have commas
-TEMP=$(getopt -o hv --long help,verbose -n "$0" -- "$@")
-#shellcheck disable=SC2181
-if [ $? != 0 ] ; then
-    die "something wrong with getopt"
-fi
-eval set -- "$TEMP"
-
-verbosity=0
-while true ; do
-    case "$1" in
-        -h|--help) help; ;;
-        -v|--verbose) verbosity=$((verbosity+1)) ; shift ;;
-        --) shift ; break ;;
-        *) die "issue parsing args, unexpected argument '$0'!" ;;
-    esac
-done
-
-
-relFile=${1:-}
-line=${2:-}
-line2=${3:-}
-log 1 "file: '$relFile', line: $line, line2: $line2"
-
 # get the default branch for remote
-# shellcheck disable=SC2120 # optional argument
 gitRemoteDefaultBranch() {
     # pass in remote or default to first
-    remote=${1:-$(git remote | head -n1)}
+    remote=${1:-$(_git remote | head -n1)}
 
     # if this fails cause dangling head, do
     # git remote set-head origin -a
-    git rev-parse --abbrev-ref "$remote/HEAD" | sed "s/$remote\///" || git remote set-head "$remote" -a | sed 's/.*set to //'
+    # it can fail for other reasons and we probably don't care in this case
+    ret=0
+    output=$(_git rev-parse --abbrev-ref "$remote/HEAD" 2>/dev/null | sed "s/$remote\///" || _git remote set-head "$remote" -a 2>/dev/null | sed 's/.*set to //') || ret=$?
+    if [[ "$ret" -ne 0 ]]; then
+        return
+    else
+        echo "$output"
+    fi
 }
 
-if [ -n "$relFile" ]; then
-    # if we have file, cd to it so git commands work
-    if [[ -d "$relFile" ]]; then
-        cd "$relFile"
-        relFile="."
-    elif [[ -a "$relFile" ]]; then
-        cd "$(dirname "$relFile")"
-        relFile=$(basename "$relFile")
+gitDirForFile()
+{
+    local f=$1
+    local dir
+
+    if [[ -d "$f" ]]; then
+        dir="$f"
+    elif [[ -e "$f" ]]; then
+        dir=$(dirname "$f")
     else
-        die "no such file/dir '$relFile'?"
+        die "no such file/dir '$f'?"
     fi
-fi
-log 2 "pwd: $(pwd)"
+    git -C "$dir" rev-parse --show-toplevel
+}
 
-curBranch=$(git rev-parse --abbrev-ref HEAD)
-log 2 "curBranch $curBranch"
+gitArgs=()
+_git()
+{
+    git "${gitArgs[@]}" "$@"
+}
 
-# find upstream and upstream branch
-upstreamBranch=$(git for-each-ref --format='%(upstream:short)' "$(git symbolic-ref -q HEAD)")
-if [[ -z "$upstreamBranch" ]]; then
-    die "your branch '$curBranch' has no upstream tracking branch"
-fi
-
-remote=$(echo "$upstreamBranch" | sed 's/\/.*//')
-
-log 2 "upstream: $upstreamBranch"
-log 2 "remote: $remote"
-
-defaultBranch=$(gitRemoteDefaultBranch)
-log 2 "remote default branch: $defaultBranch"
-if [[ "$curBranch" != "$defaultBranch" ]]; then
-    log 3 "not on default branch"
-fi
-
-# get git remote URL
-if ! url=$(git config --get "remote.$remote.url"); then
-    die "no remote?"
-fi
-
-
-
-fields=$(echo "$url" | perl -ne '($host, $owner, $repo) = /^(?:https?:\/\/|git@)([^:\/]*)(?:[:\/])([^\/]*)\/(.*?)(?:.git)?+\/?$/; print "$host\t$owner\t$repo";')
-providerStr=$(echo "$fields" | cut -d$'\t' -f1)
-owner=$(echo "$fields" | cut -d$'\t' -f2)
-repo=$(echo "$fields" | cut -d$'\t' -f3)
-log 2 "repo remote url  name parsed to $providerStr $owner $repo"
-
-
-# handle stuff like git@github.com-company without parsing the ssh config
-lineStr=""
-case "$providerStr" in
-    *"github.com"*)
-        provider=github.com
-        repoFileSeparator=blob
-        if [ -n "$line" ]; then
-            lineStr="#L$line"
-            if [ -n "$line2" ]; then
-                lineStr+="-L$line2"
-            fi
+findRemoteInfo()
+{
+    local -n remoteArg=$1 branchArg=$2 shaArg=$3
+    branchArg=$(_git rev-parse --abbrev-ref HEAD)
+    # shellcheck disable=SC2034 # unused because nameref
+    shaArg=$(_git rev-parse --verify HEAD)
+    if [[ "$branchArg" == "HEAD" ]]; then
+        branchArg=""
+        remoteArg=$(git remote | head -n1)
+        if [[ "$(git remote | wc -l)" -gt 1 ]]; then
+            msg "warning, not on a branchArg, so picking remote '$remoteArg' because it's first"
         fi
-        ;;
-    *"gitlab.com"*)
-        provider=gitlab.com
-        repoFileSeparator=-/blob
-        if [ -n "$line" ]; then
-            lineStr="#L$line"
-            if [ -n "$line2" ]; then
-                lineStr+="-$line2"
+        return
+    fi
+
+    # find upstream and upstream branch
+    local upstreamBranch
+    upstreamBranch=$(_git for-each-ref --format='%(upstream:short)' "$(_git symbolic-ref -q HEAD)")
+    if [[ -z "$upstreamBranch" ]]; then
+        die "your branch '$branchArg' has no upstream tracking branch"
+    fi
+
+    remoteArg=$(echo "$upstreamBranch" | sed 's/\/.*//')
+
+}
+
+# shellcheck disable=SC2034 # unused because nameref
+parseRemoteURL()
+{
+    local url=$1
+    local -n hostArg=$2 ownerArg=$3 repoArg=$4
+    local fields
+    fields=$(echo "$url" | perl -ne '($host, $owner, $repo) = /^(?:https?:\/\/|git@)([^:\/]*)(?:[:\/])([^\/]*)\/(.*?)(?:.git)?+\/?$/; print "$host\t$owner\t$repo";')
+    hostArg=$(echo "$fields" | cut -d$'\t' -f1)
+    ownerArg=$(echo "$fields" | cut -d$'\t' -f2)
+    repoArg=$(echo "$fields" | cut -d$'\t' -f3)
+}
+
+doStuff()
+{
+    local relFile=$1
+    local line=$2
+    local line2=$3
+    log 1 "file: '$relFile', line: $line, line2: $line2"
+
+    local file=""
+    if [ -n "$relFile" ]; then
+        local gitRoot fullFile
+        # if we have file, get the git dir for it so we talk to that git
+        gitRoot=$(gitDirForFile "$relFile")
+        gitArgs+=(-C "$gitRoot")
+        log 2 "gitArgs: ${gitArgs[*]}"
+
+        # get file relative to git root
+        fullFile=$(realpath "$relFile") # get full path of relative filepath
+        log 3 "full filepath: $fullFile"
+        log 3 "git root: $gitRoot"
+        file=${fullFile#"$gitRoot"} # remove prefix of $gitRoot, will do /README.md
+        file=$(echo "$file" | sed "s/^\///") # remove ^/
+        log 2 "file relative to repo root: $file"
+    fi
+
+    local remote branch sha defaultBranch
+    findRemoteInfo remote branch sha
+
+    # shellcheck disable=SC2034 # unused because nameref
+    defaultBranch=$(gitRemoteDefaultBranch "$remote")
+    log 2 "remote: '$remote', branch: '$branch', sha: '$sha', default branch: '$defaultBranch'"
+
+    # get git remote URL
+    local url
+    if ! url=$(_git config --get "remote.$remote.url"); then
+        die "no remote?"
+    fi
+
+    local host owner repo
+    parseRemoteURL "$url" host owner repo
+    log 2 "repo remote url '$url' parsed to '$host' '$owner' '$repo'"
+
+    # handle stuff like git@github.com-company without parsing the ssh config
+    local provider repoFileSeparator repoTreeSeparator lineStr
+    lineStr=""
+    case "$host" in
+        *"github.com"*)
+            provider=github.com
+            repoFileSeparator=blob
+            repoTreeSeparator=tree
+            if [ -n "$line" ]; then
+                lineStr="#L$line"
+                if [ -n "$line2" ]; then
+                    lineStr+="-L$line2"
+                fi
             fi
+            ;;
+        *"gitlab.com"*)
+            provider=gitlab.com
+            repoFileSeparator=-/blob
+            repoTreeSeparator=-/blob # TODO check
+            if [ -n "$line" ]; then
+                lineStr="#L$line"
+                if [ -n "$line2" ]; then
+                    lineStr+="-$line2"
+                fi
+            fi
+            ;;
+        #*"bitbucket.org"*)
+        #    provider=bitbucket.org
+        #    if [ -n "$line" ]; then
+        #        lineStr="#lines-$line"
+        #    fi
+        #    ;;
+        *)
+            die "don't support $host yet"
+            ;;
+    esac
+
+    local repoURL="https://$provider/$owner/$repo"
+
+    local target=${branch:-$sha}
+
+
+
+    if [ -z "$file" ]; then
+        if [[ "$branch" == "$defaultBranch" ]]; then
+            echo "$repoURL"
+        else
+            echo "$repoURL/$repoTreeSeparator/$target"
         fi
-        ;;
-    #*"bitbucket.org"*)
-    #    provider=bitbucket.org
-    #    if [ -n "$line" ]; then
-    #        lineStr="#lines-$line"
-    #    fi
-    #    ;;
-    *)
-        die "don't support $providerStr yet"
-        ;;
-esac
+        exit 0
+    fi
 
-repoURL="https://$provider/$owner/$repo"
+    #echo "file: $file"
 
-# if no file, just print repo url
-if [ -z "$relFile" ]; then
-    log 3 "none file, have a blank url"
-    echo "$repoURL"
+    # print the URL
+    url="$repoURL/$repoFileSeparator/$target/$file$lineStr"
+    echo "$url"
     exit 0
+}
+
+# run only if not sourced
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    if ! PARSED_ARGS=$(getopt -o hv --long help,verbose -n "$0" -- "$@") ; then
+        h "getopt issue ^"
+    fi
+    eval set -- "$PARSED_ARGS"
+
+    verbosity=0
+    while true ; do
+        case "$1" in
+            -h|--help) h; ;;
+            -v|--verbose) verbosity=$((verbosity+1)) ; shift ;;
+            --) shift ; break ;;
+            *) die "issue parsing args, unexpected argument '$0'!" ;;
+        esac
+    done
+
+
+    relFile=${1:-}
+    line=${2:-}
+    line2=${3:-}
+    doStuff "$relFile" "$line" "$line2"
 fi
-
-# get current branch or commit hash
-# https://stackoverflow.com/a/1593487/2423187
-head=$(git symbolic-ref -q HEAD || true)
-head=${head##refs/heads/}
-head=${head:-$(git rev-parse HEAD)}
-
-# get file relative to git root
-fullFile=$(realpath "$relFile") # get full path of relative filepath
-gitRoot=$(git rev-parse --show-toplevel)
-log 3 "full filepath: $fullFile"
-log 3 "git root: $gitRoot"
-file=${fullFile#"$gitRoot"} # remove prefix of $gitRoot, will do /README.md
-file=$(echo "$file" | sed "s/^\///") # remove ^/
-log 2 "file relative to repo root: $file"
-
-if [ -z "$file" ]; then
-    log 3 "none file but on branch so link that"
-    echo "$repoURL/tree/$head"
-    exit 0
-fi
-
-#echo "file: $file"
-
-# print the URL
-url="$repoURL/$repoFileSeparator/$head/$file$lineStr"
-echo "$url"
-exit 0
