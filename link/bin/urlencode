@@ -1,0 +1,10 @@
+#!/usr/bin/env perl
+use URI::Escape;
+
+## bash
+# function urlencode {
+#     perl -MURI::Escape -e 'print uri_escape($ARGV[0])' "$@"
+# }
+foreach my $arg (@ARGV) {
+    print uri_escape($arg) . "\n"
+}

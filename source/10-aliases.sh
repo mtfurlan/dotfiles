@@ -91,14 +91,6 @@ alias copyToClipboard="xclip -sel clip"
 
 alias udevReload="sudo udevadm control --reload-rules && sudo udevadm trigger"
 
-
-function urlencode {
-    perl -MURI::Escape -e 'print uri_escape($ARGV[0])' "$@"
-}
-function urldecode {
-    perl -MURI::Escape -e 'print uri_unescape($ARGV[0])' "$@"
-}
-
 alias fuck=f
 
 alias utc="TZ=Z date"
