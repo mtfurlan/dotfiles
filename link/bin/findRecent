@@ -24,4 +24,4 @@ esac
 
 # Process substitution keeps find's intentionally suppressed failures from
 # triggering pipefail; sort's status remains the command's status.
-sort -r < <(find "$@" -printf '%T+ %h%f\n' 2>/dev/null)
+sort -r < <(find "$@" -printf '%T+ %h/%f\n' 2>/dev/null)
