@@ -1,0 +1,12 @@
+#!/bin/bash
+set -euo pipefail
+
+
+authorDate=$(git log -n1 --pretty="format:%aI")
+commitDate=$(git log -n1 --pretty="format:%cI")
+
+export GIT_AUTHOR_DATE="$authorDate"
+export GIT_COMMITTER_DATE="$commitDate"
+
+git commit --amend --date "$authorDate" "$@"
+
