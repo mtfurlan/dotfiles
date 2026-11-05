@@ -1,6 +1,23 @@
-#!/bin/sh
+#!/bin/bash
 # extract field $1
 # https://utcc.utoronto.ca/~cks/space/blog/sysadmin/LittleScriptsIX?showcomments
+#
+if [[ "${1:-}" == "-h" ]] || [[ "${1:-}" == "--help" ]]; then
+    cat <<EOF
+Usage: $(basename "${BASH_SOURCE[0]}") <field> [AWK ARGS]
+       $(basename "${BASH_SOURCE[0]}") -h|--help
+  Print awk field <field> of each line of stdin
+  <field> is any awk expression, e.g. 2, NF, NF-1
+
+Examples:
+  ps aux | field 2           # PIDs
+  field NF -F: < /etc/passwd # login shells
+
+See also: tally, datamash(1)
+EOF
+    exit 0
+fi
+
 field=${1:?must pass field}
 shift
 awk "$@" '{print $('"$field"') }'

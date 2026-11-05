@@ -1,10 +1,24 @@
 #!/bin/bash
 # add up column N
 # https://utcc.utoronto.ca/~cks/space/blog/sysadmin/LittleScriptsIX?showcomments
-# remember datamash exists for more complicated maths
+
+if [[ "${1:-}" == "-h" ]] || [[ "${1:-}" == "--help" ]]; then
+    cat <<EOF
+Usage: $(basename "${BASH_SOURCE[0]}") [field [AWK ARGS]]
+       $(basename "${BASH_SOURCE[0]}") -h|--help
+  Sum awk field [field] (default 1) of each line of stdin
+
+Examples:
+  du -s * | tally            # total size
+  tally 3 -F, < data.csv     # sum the 3rd CSV column
+
+See also: field, datamash(1)
+EOF
+    exit 0
+fi
+
 field=${1:-1}
 if [[ $# -gt 0 ]]; then
    shift
 fi
-# don't print sum, awk will use exponential notation
-awk "$@" '{sum += $('"$field"') } END {printf "%d\n", sum}'
+awk "$@" '{sum += $('"$field"') } END {printf OFMT "\n", sum}'
