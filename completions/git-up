@@ -1,0 +1,4 @@
+# git is magic so it's all fine
+_git_up() {
+    __git_complete_refs --mode=heads
+}

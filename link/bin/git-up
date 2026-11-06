@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+h ()
+{
+    if [ $# != 0 ]; then
+        exec >&2 # redirect everything to stderr
+        echo "$*"
+    fi
+
+    cat <<EOF
+Usage: $(basename "${BASH_SOURCE[0]}") [OPTION]... [branch]...
+  Update branches from their upstream and show the new commits.
+
+  branch: branch to update, default the checked out branch
+
+Available options:
+  -h, --help          Display this help and exit
+EOF
+
+    exit $(( $# != 0 ))
+}
+
+msg()
+{
+    >&2 printf '%s\n' "$*"
+}
+
+die()
+{
+    msg "$1"
+    exit "${2:-1}"
+}
+
+# pull the checked out branch
+upCurrent()
+{
+    local logStart
+    logStart=$(git rev-parse HEAD)
+    git pull --rebase --prune --autostash --recurse-submodules
+    git --no-pager llog "$logStart.." --stat
+}
+
+# fast-forward a branch that isn't checked out, using its upstream
+upOther()
+{
+    local branch=$1
+    local remote merge logStart
+
+    git show-ref --verify --quiet "refs/heads/$branch" \
+        || die "no local branch '$branch'"
+    remote=$(git config "branch.$branch.remote") \
+        || die "'$branch' has no upstream"
+    # get the name of the upstream branch in case it's not the same
+    merge=$(git config "branch.$branch.merge") \
+        || die "'$branch' has no upstream merge ref"
+
+    logStart=$(git rev-parse "refs/heads/$branch")
+    msg "updating $branch from $remote ${merge#refs/heads/}"
+    git fetch "$remote" "$merge:refs/heads/$branch"
+    git --no-pager llog "$logStart..refs/heads/$branch" --stat
+}
+
+# run only if not sourced
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    if ! PARSED_ARGS=$(getopt -o h --long help -n "$0" -- "$@") ; then
+        h "getopt issue ^"
+    fi
+    eval set -- "$PARSED_ARGS"
+
+    while true ; do
+        case "$1" in
+            -h|--help) h ;;
+            --) shift ; break ;;
+            *) die "issue parsing args, unexpected argument '$1'!" ;;
+        esac
+    done
+
+    if (($# == 0)); then
+        upCurrent
+        exit 0
+    fi
+
+    curBranch=$(git branch --show-current)
+    for branch in "$@"; do
+        if [[ "$branch" == "$curBranch" ]]; then
+            upCurrent
+        else
+            upOther "$branch"
+        fi
+    done
+fi
